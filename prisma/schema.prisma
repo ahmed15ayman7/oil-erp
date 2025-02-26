@@ -1,0 +1,349 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and authorization
+model User {
+  id            String    @id @default(cuid()) @map("_id")
+  name          String
+  email         String    @unique
+  password      String
+  role          UserRole  @default(EMPLOYEE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sales         Sale[]
+  purchases     Purchase[]
+  transactions  Transaction[]
+  stockMovements StockMovement[]
+  vehicleExpenses VehicleExpense[]
+}
+
+enum UserRole {
+  ADMIN
+  ACCOUNTANT
+  REPRESENTATIVE
+  WAREHOUSE_KEEPER
+  EMPLOYEE
+}
+
+// Product model
+model Product {
+  id                String          @id @default(cuid()) @map("_id")
+  code              String          @unique
+  barcode           String?         @unique
+  name              String
+  description       String?
+  category          Category        @relation(fields: [categoryId], references: [id])
+  categoryId        String
+  unit              Unit            @relation(fields: [unitId], references: [id])
+  unitId            String
+  price             Float
+  lastPurchasePrice Float?
+  quantity          Float           @default(0)
+  minQuantity       Float           @default(0)
+  maxQuantity       Float           @default(0)
+  type              ProductType     @default(FINISHED_PRODUCT)
+  status            ProductStatus   @default(IN_STOCK)
+  location          String?         // Storage location in warehouse
+  isActive          Boolean         @default(true)
+  purchaseItems     PurchaseItem[]
+  saleItems         SaleItem[]
+  stockMovements    StockMovement[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+enum ProductType {
+  RAW_MATERIAL      // المواد الخام
+  FINISHED_PRODUCT  // المنتج النهائي
+  PACKAGING         // مواد التغليف
+  BOTTLE            // الزجاجات
+  CARTON            // الكراتين
+}
+
+enum ProductStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+}
+
+// Category model
+model Category {
+  id          String    @id @default(cuid()) @map("_id")
+  name        String    @unique
+  description String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Unit model
+model Unit {
+  id          String    @id @default(cuid()) @map("_id")
+  name        String    @unique
+  symbol      String    @unique
+  description String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Customer model
+model Customer {
+  id              String    @id @default(cuid()) @map("_id")
+  name            String
+  phone           String?
+  address         String?
+  type            CustomerType
+  taxNumber       String?
+  commercialReg   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  sales           Sale[]
+}
+
+enum CustomerType {
+  WHOLESALE
+  RETAIL
+}
+
+// Supplier model
+model Supplier {
+  id            String    @id @default(cuid()) @map("_id")
+  name          String
+  phone         String?
+  address       String?
+  taxNumber     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  purchases     Purchase[]
+}
+
+// Vehicle model for transportation management
+model Vehicle {
+  id          String      @id @default(cuid()) @map("_id")
+  plateNumber String      @unique
+  model       String
+  capacity    Float
+  notes       String?
+  status      VehicleStatus @default(ACTIVE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  expenses    VehicleExpense[]
+  maintenances Maintenance[]
+  fuelRecords  FuelRecord[]
+}
+
+// VehicleExpense model for vehicle expenses
+model VehicleExpense {
+  id          String      @id @default(cuid()) @map("_id")
+  vehicleId   String
+  vehicle     Vehicle     @relation(fields: [vehicleId], references: [id])
+  type        ExpenseType
+  amount      Float
+  date        DateTime
+  odometer    Float?      // قراءة العداد
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+}
+
+enum VehicleStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum ExpenseType {
+  FUEL
+  MAINTENANCE
+  OIL_CHANGE
+  TIRES
+  INSURANCE
+  OTHER
+}
+
+// Sales and Purchases Management
+model Sale {
+  id            String    @id @default(cuid()) @map("_id")
+  invoiceNumber String    @unique
+  customerId    String
+  customer      Customer  @relation(fields: [customerId], references: [id])
+  date          DateTime
+  dueDate       DateTime?
+  status        PaymentStatus @default(PENDING)
+  items         SaleItem[]
+  subtotal      Float
+  tax           Float     @default(0)
+  discount      Float     @default(0)
+  total         Float
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  repId         String
+  rep           SalesRepresentative @relation(fields: [repId], references: [id])
+}
+
+model SaleItem {
+  id          String    @id @default(cuid()) @map("_id")
+  saleId      String
+  sale        Sale      @relation(fields: [saleId], references: [id])
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  quantity    Float
+  price       Float
+  total       Float
+  notes       String?
+}
+
+model Purchase {
+  id            String    @id @default(cuid()) @map("_id")
+  invoiceNumber String    @unique
+  supplierId    String
+  supplier      Supplier  @relation(fields: [supplierId], references: [id])
+  date          DateTime
+  dueDate       DateTime?
+  status        PaymentStatus @default(PENDING)
+  items         PurchaseItem[]
+  subtotal      Float
+  tax           Float     @default(0)
+  discount      Float     @default(0)
+  total         Float
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+}
+
+model PurchaseItem {
+  id          String    @id @default(cuid()) @map("_id")
+  purchaseId  String
+  purchase    Purchase  @relation(fields: [purchaseId], references: [id])
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  quantity    Float
+  price       Float
+  total       Float
+  notes       String?
+}
+
+enum PaymentStatus {
+  PAID
+  PARTIALLY_PAID
+  PENDING
+  OVERDUE
+  CANCELLED
+  COMPLETED
+}
+
+// Transaction model for financial records
+model Transaction {
+  id            String    @id @default(cuid()) @map("_id")
+  type          TransactionType
+  amount        Float
+  description   String?
+  user          User      @relation(fields: [userId], references: [id])
+  userId        String
+  status        TransactionStatus @default(PENDING)
+  currency      String    @default("EGP")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+// StockMovement model for tracking inventory changes
+model StockMovement {
+  id          String        @id @default(cuid()) @map("_id")
+  product     Product       @relation(fields: [productId], references: [id])
+  productId   String
+  type        MovementType
+  quantity    Float
+  reference   String?       // Reference number (e.g., purchase/sale invoice number)
+  notes       String?
+  user        User          @relation(fields: [userId], references: [id])
+  userId      String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+enum MovementType {
+  PURCHASE      // شراء
+  SALE          // بيع
+  ADJUSTMENT    // تعديل
+  RETURN        // مرتجع
+  DAMAGE        // تالف
+  TRANSFER      // نقل
+}
+
+// Maintenance model for vehicle and asset maintenance
+model Maintenance {
+  id            String    @id @default(cuid()) @map("_id")
+  vehicle       Vehicle   @relation(fields: [vehicleId], references: [id])
+  vehicleId     String
+  description   String
+  cost          Float
+  date          DateTime
+  nextDate      DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// FuelRecord model for vehicle fuel consumption
+model FuelRecord {
+  id            String    @id @default(cuid()) @map("_id")
+  vehicle       Vehicle   @relation(fields: [vehicleId], references: [id])
+  vehicleId     String
+  liters        Float
+  cost          Float
+  date          DateTime
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model SalesRepresentative {
+  id            String    @id @default(cuid()) @map("_id")
+  name          String
+  phone         String    @unique
+  attendance    AttendanceRecord[]
+  sales         Sale[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model AttendanceRecord {
+  id              String    @id @default(cuid()) @map("_id")
+  repId           String
+  checkIn         DateTime  @default(now())
+  checkOut        DateTime?
+  notes           String?
+  
+  representative  SalesRepresentative @relation(fields: [repId], references: [id])
+}
+
