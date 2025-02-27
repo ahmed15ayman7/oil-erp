@@ -11,7 +11,7 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: "Oil Factory ERP",
+  title: "نظام إدارة مصنع الزيت المتكامل",
   description: "نظام إدارة مصنع الزيت المتكامل",
 };
 
