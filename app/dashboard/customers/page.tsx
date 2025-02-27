@@ -111,6 +111,8 @@ export default function CustomersPage() {
         toast.update(loadingToast, {
           render: "تم تحديث بيانات العميل بنجاح",
           type: "success",
+          isLoading: false,
+          autoClose: 3000,
         });
       } else {
         await fetch("/api/customers", {
@@ -121,6 +123,8 @@ export default function CustomersPage() {
         toast.update(loadingToast, {
           render: "تم إضافة العميل بنجاح",
           type: "success",
+          isLoading: false,
+          autoClose: 3000,
         });
       }
       setFormOpen(false);
@@ -129,6 +133,8 @@ export default function CustomersPage() {
       toast.update(loadingToast, {
         render: "حدث خطأ أثناء حفظ البيانات",
         type: "error",
+        isLoading: false,
+        autoClose: 3000,
       });
       console.error(error);
     } finally {
@@ -146,6 +152,8 @@ export default function CustomersPage() {
       toast.update(loadingToast, {
         render: "تم حذف العميل بنجاح",
         type: "success",
+        isLoading: false,
+        autoClose: 3000,
       });
       setDeleteDialogOpen(false);
       refetchCustomers();
@@ -153,6 +161,8 @@ export default function CustomersPage() {
       toast.update(loadingToast, {
         render: "حدث خطأ أثناء حذف العميل",
         type: "error",
+        isLoading: false,
+        autoClose: 3000,
       });
       console.error(error);
     } finally {
@@ -169,11 +179,15 @@ export default function CustomersPage() {
       toast.update(loadingToast, {
         render: "تم تصدير البيانات بنجاح",
         type: "success",
+        isLoading: false,
+        autoClose: 3000,
       });
     } catch (error) {
       toast.update(loadingToast, {
         render: "حدث خطأ أثناء تصدير البيانات",
         type: "error",
+        isLoading: false,
+        autoClose: 3000,
       });
       console.error("Error exporting data:", error);
     }
@@ -188,11 +202,15 @@ export default function CustomersPage() {
       toast.update(loadingToast, {
         render: "تم إنشاء التقرير بنجاح",
         type: "success",
+        isLoading: false,
+        autoClose: 3000,
       });
     } catch (error) {
       toast.update(loadingToast, {
         render: "حدث خطأ أثناء إنشاء التقرير",
         type: "error",
+        isLoading: false,
+        autoClose: 3000,
       });
       console.error("Error generating report:", error);
     }

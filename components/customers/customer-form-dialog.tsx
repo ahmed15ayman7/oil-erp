@@ -30,7 +30,6 @@ export function CustomerFormDialog({
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     phone: initialData?.phone || "",
-    email: initialData?.email || "",
     address: initialData?.address || "",
     type: initialData?.type || "RETAIL",
     taxNumber: initialData?.taxNumber || "",
@@ -55,7 +54,7 @@ export function CustomerFormDialog({
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 name="name"
                 label="اسم العميل"
@@ -70,16 +69,6 @@ export function CustomerFormDialog({
                 name="phone"
                 label="رقم الهاتف"
                 value={formData.phone}
-                onChange={handleChange}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                name="email"
-                label="البريد الإلكتروني"
-                type="email"
-                value={formData.email}
                 onChange={handleChange}
                 fullWidth
               />

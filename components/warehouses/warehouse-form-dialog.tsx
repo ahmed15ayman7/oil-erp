@@ -79,6 +79,7 @@ export function WarehouseFormDialog({
                 <MenuItem value="RAW_MATERIALS">مواد خام</MenuItem>
                 <MenuItem value="BOTTLES">زجاجات</MenuItem>
                 <MenuItem value="CARTONS">كراتين</MenuItem>
+                <MenuItem value="STICKER">ستيكر</MenuItem>
                 <MenuItem value="FINISHED_PRODUCTS">منتجات نهائية</MenuItem>
               </TextField>
             </Grid>

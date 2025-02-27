@@ -428,6 +428,7 @@ enum WarehouseType {
   BOTTLES
   CARTONS
   FINISHED_PRODUCTS
+  STICKER
 }
 
 model Warehouse {
