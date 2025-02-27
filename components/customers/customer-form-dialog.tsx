@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -10,8 +10,7 @@ import {
   TextField,
   MenuItem,
   Grid,
-  CircularProgress,
-} from '@mui/material';
+} from "@mui/material";
 
 interface CustomerFormDialogProps {
   open: boolean;
@@ -26,41 +25,21 @@ export function CustomerFormDialog({
   onClose,
   onSubmit,
   initialData,
-  loading = false,
+  loading,
 }: CustomerFormDialogProps) {
   const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    address: '',
-    type: 'INDIVIDUAL',
-    taxNumber: '',
-    commercialRegister: '',
-    notes: '',
+    name: initialData?.name || "",
+    phone: initialData?.phone || "",
+    email: initialData?.email || "",
+    address: initialData?.address || "",
+    type: initialData?.type || "RETAIL",
+    taxNumber: initialData?.taxNumber || "",
+    commercialReg: initialData?.commercialReg || "",
   });
 
-  useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
-    } else {
-      setFormData({
-        name: '',
-        phone: '',
-        email: '',
-        address: '',
-        type: 'INDIVIDUAL',
-        taxNumber: '',
-        commercialRegister: '',
-        notes: '',
-      });
-    }
-  }, [initialData]);
-
-  const handleChange = (field: string) => (event: any) => {
-    setFormData({
-      ...formData,
-      [field]: event.target.value,
-    });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -69,114 +48,91 @@ export function CustomerFormDialog({
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      dir="rtl"
-    >
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <form onSubmit={handleSubmit}>
         <DialogTitle>
-          {initialData ? 'تعديل عميل' : 'إضافة عميل جديد'}
+          {initialData ? "تعديل بيانات العميل" : "إضافة عميل جديد"}
         </DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} className="mt-2">
-            <Grid item xs={12} sm={6}>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
               <TextField
-                fullWidth
-                label="الاسم"
+                name="name"
+                label="اسم العميل"
                 value={formData.name}
-                onChange={handleChange('name')}
+                onChange={handleChange}
+                fullWidth
                 required
               />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                fullWidth
+                name="phone"
                 label="رقم الهاتف"
                 value={formData.phone}
-                onChange={handleChange('phone')}
-                required
+                onChange={handleChange}
+                fullWidth
               />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                fullWidth
+                name="email"
                 label="البريد الإلكتروني"
                 type="email"
                 value={formData.email}
-                onChange={handleChange('email')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                select
+                onChange={handleChange}
                 fullWidth
-                label="النوع"
-                value={formData.type}
-                onChange={handleChange('type')}
-                required
-              >
-                <MenuItem value="INDIVIDUAL">فرد</MenuItem>
-                <MenuItem value="COMPANY">شركة</MenuItem>
-              </TextField>
+              />
             </Grid>
             <Grid item xs={12}>
               <TextField
-                fullWidth
+                name="address"
                 label="العنوان"
                 value={formData.address}
-                onChange={handleChange('address')}
+                onChange={handleChange}
+                fullWidth
                 multiline
                 rows={2}
               />
             </Grid>
-            {formData.type === 'COMPANY' && (
-              <>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="الرقم الضريبي"
-                    value={formData.taxNumber}
-                    onChange={handleChange('taxNumber')}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="السجل التجاري"
-                    value={formData.commercialRegister}
-                    onChange={handleChange('commercialRegister')}
-                  />
-                </Grid>
-              </>
-            )}
             <Grid item xs={12}>
               <TextField
+                name="type"
+                label="نوع العميل"
+                value={formData.type}
+                onChange={handleChange}
+                select
                 fullWidth
-                label="ملاحظات"
-                value={formData.notes}
-                onChange={handleChange('notes')}
-                multiline
-                rows={3}
+                required
+              >
+                <MenuItem value="RETAIL">قطاعي</MenuItem>
+                <MenuItem value="WHOLESALE">جملة</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                name="taxNumber"
+                label="الرقم الضريبي"
+                value={formData.taxNumber}
+                onChange={handleChange}
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                name="commercialReg"
+                label="السجل التجاري"
+                value={formData.commercialReg}
+                onChange={handleChange}
+                fullWidth
               />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose} disabled={loading}>
-            إلغاء
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={loading}
-            endIcon={
-              loading ? <CircularProgress size={20} /> : null
-            }
-          >
-            {initialData ? 'تعديل' : 'إضافة'}
+          <Button onClick={onClose}>إلغاء</Button>
+          <Button type="submit" variant="contained" disabled={loading}>
+            حفظ
           </Button>
         </DialogActions>
       </form>

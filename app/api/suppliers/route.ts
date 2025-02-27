@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
 
     // Validate required fields
-    if (!data.name || !data.phone || !data.type) {
+    if (!data.name || !data.phone ) {
       throw new ApiError('Missing required fields');
     }
 
@@ -117,7 +117,6 @@ export async function POST(request: NextRequest) {
     const supplier = await prisma.supplier.create({
       data: {
         ...data,
-        userId: session.user.id,
       },
     });
 

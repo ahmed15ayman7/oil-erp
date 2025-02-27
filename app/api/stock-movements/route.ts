@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
       AND: [
         productId ? { productId } : {},
         type ? { type: type as MovementType } : {},
-        startDate ? { createdAt: { gte: new Date(startDate) } } : {},
-        endDate ? { createdAt: { lte: new Date(endDate) } } : {},
+        startDate && !isNaN(Date.parse(startDate)) ? { createdAt: { gte: new Date(startDate) } } : {},
+        endDate && !isNaN(Date.parse(endDate)) ? { createdAt: { lte: new Date(endDate) } } : {},
       ],
     };
 

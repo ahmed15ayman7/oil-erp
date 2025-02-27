@@ -1,18 +1,14 @@
-import { prisma } from '@/lib/prisma';
-import {
-  handleApiError,
-  successResponse,
-  ApiError,
-} from '@/lib/api-response';
-import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { Prisma } from '@prisma/client';
+import { prisma } from "@/lib/prisma";
+import { handleApiError, successResponse, ApiError } from "@/lib/api-response";
+import { NextRequest } from "next/server";
+import { getServerSession } from "next-auth";
+import { Prisma } from "@prisma/client";
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const search = searchParams.get('search') || '';
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
 
     const skip = (page - 1) * limit;
 
@@ -38,7 +34,7 @@ export async function GET(request: NextRequest) {
         },
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
       prisma.customer.count({ where }),
     ]);
@@ -51,10 +47,7 @@ export async function GET(request: NextRequest) {
           select: { total: true },
         });
 
-        const balance = sales.reduce(
-          (sum, sale) => sum + sale.total,
-          0
-        );
+        const balance = sales.reduce((sum, sale) => sum + sale.total, 0);
 
         return {
           ...customer,
@@ -76,14 +69,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
     if (!session?.user) {
-      throw new ApiError('Unauthorized', 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const data = await request.json();
 
     // Validate required fields
     if (!data.name || !data.phone || !data.type) {
-      throw new ApiError('Missing required fields');
+      throw new ApiError("Missing required fields");
     }
 
     // Check if phone number is unique
@@ -92,7 +85,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingCustomer) {
-      throw new ApiError('رقم الهاتف مستخدم بالفعل');
+      throw new ApiError("رقم الهاتف مستخدم بالفعل");
     }
 
     const customer = await prisma.customer.create({
@@ -112,14 +105,14 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession();
     if (!session?.user) {
-      throw new ApiError('Unauthorized', 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const data = await request.json();
     const { id, ...updateData } = data;
 
     if (!id) {
-      throw new ApiError('Missing customer ID');
+      throw new ApiError("Missing customer ID");
     }
 
     // Check if customer exists
@@ -128,7 +121,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!existingCustomer) {
-      throw new ApiError('Customer not found');
+      throw new ApiError("Customer not found");
     }
 
     // Check if phone number is unique (excluding current customer)
@@ -140,7 +133,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (phoneExists) {
-      throw new ApiError('رقم الهاتف مستخدم بالفعل');
+      throw new ApiError("رقم الهاتف مستخدم بالفعل");
     }
 
     const customer = await prisma.customer.update({
@@ -158,14 +151,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession();
     if (!session?.user) {
-      throw new ApiError('Unauthorized', 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const id = searchParams.get("id");
 
     if (!id) {
-      throw new ApiError('Missing customer ID');
+      throw new ApiError("Missing customer ID");
     }
 
     // Check if customer has any related sales
@@ -174,16 +167,14 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (customerSales) {
-      throw new ApiError(
-        'لا يمكن حذف العميل لوجود مبيعات مرتبطة به'
-      );
+      throw new ApiError("لا يمكن حذف العميل لوجود مبيعات مرتبطة به");
     }
 
     await prisma.customer.delete({
       where: { id },
     });
 
-    return successResponse({ message: 'Customer deleted successfully' });
+    return successResponse({ message: "Customer deleted successfully" });
   } catch (error) {
     return handleApiError(error);
   }

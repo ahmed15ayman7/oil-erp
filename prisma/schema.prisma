@@ -28,6 +28,9 @@ model User {
   transactions  Transaction[]
   stockMovements StockMovement[]
   vehicleExpenses VehicleExpense[]
+  assets        Asset[]
+  maintenanceLogs MaintenanceLog[]
+  representatives Representative[]
 }
 
 enum UserRole {
@@ -63,6 +66,8 @@ model Product {
   stockMovements    StockMovement[]
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+
+  warehouseItems WarehouseItem[]
 }
 
 enum ProductType {
@@ -126,6 +131,10 @@ model Supplier {
   phone         String?
   address       String?
   taxNumber     String?
+  isActive      Boolean   @default(true)
+  notes         String?
+  balance       Float     @default(0)
+  lastPurchaseDate DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   purchases     Purchase[]
@@ -198,6 +207,8 @@ model Sale {
   user          User      @relation(fields: [userId], references: [id])
   repId         String
   rep           SalesRepresentative @relation(fields: [repId], references: [id])
+  representatives Representative[] @relation("RepresentativeSales", references: [id], fields: [representativeIds])
+  representativeIds String[] @default([])
 }
 
 model SaleItem {
@@ -345,5 +356,144 @@ model AttendanceRecord {
   notes           String?
   
   representative  SalesRepresentative @relation(fields: [repId], references: [id])
+}
+
+model Asset {
+  id            String    @id @default(cuid()) @map("_id")
+  name          String
+  type          AssetType
+  purchaseDate  DateTime
+  value         Float
+  nextMaintenance DateTime?
+  status        AssetStatus
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  createdBy     String
+  user          User      @relation(fields: [createdBy], references: [id]) 
+  maintenanceLogs MaintenanceLog[]
+}
+
+enum AssetType {
+  MACHINE
+  EQUIPMENT
+  VEHICLE
+  OTHER
+}
+
+enum AssetStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+}
+
+model MaintenanceLog {
+  id          String    @id @default(cuid()) @map("_id")
+  assetId     String
+  asset       Asset     @relation(fields: [assetId], references: [id])
+  date        DateTime
+  description String
+  cost        Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String
+  user        User      @relation(fields: [createdBy], references: [id]) 
+}
+
+model Representative {
+  id        String    @id @default(cuid()) @map("_id")
+  name      String
+  phone     String
+  area      String
+  status    RepresentativeStatus
+  sales     Sale[] @relation("RepresentativeSales", references: [id], fields: [saleIds])
+  saleIds   String[] @default([])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String
+  user      User      @relation(fields: [createdBy], references: [id])
+}
+
+enum RepresentativeStatus {
+  ACTIVE
+  ON_LEAVE
+  INACTIVE
+}
+
+enum WarehouseType {
+  RAW_MATERIALS
+  BOTTLES
+  CARTONS
+  FINISHED_PRODUCTS
+}
+
+model Warehouse {
+  id          String        @id @default(cuid()) @map("_id")
+  name        String
+  type        WarehouseType
+  location    String?
+  description String?
+  items       WarehouseItem[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model WarehouseItem {
+  id          String    @id @default(cuid()) @map("_id")
+  warehouseId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  quantity    Float     @default(0)
+  minQuantity Float     @default(0)
+  location    String?   // موقع التخزين داخل المخزن
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([warehouseId, productId])
+}
+
+enum MaterialType {
+  RAW_MATERIAL    // مواد خام
+  PACKAGING       // مواد تعبئة
+  BOTTLE          // زجاجات
+  CARTON          // كراتين
+}
+
+enum UnitType {
+  KG        // كيلوجرام
+  GRAM      // جرام
+  LITER     // لتر
+  PIECE     // قطعة
+  BOX       // صندوق
+}
+
+model Material {
+  id          String       @id @default(cuid()) @map("_id")
+  name        String      // اسم المادة
+  code        String      @unique  // كود المادة
+  type        MaterialType
+  unit        UnitType    // وحدة القياس
+  quantity    Float       @default(0)  // الكمية المتوفرة
+  minQuantity Float       @default(0)  // الحد الأدنى
+  price       Float       @default(0)  // سعر الوحدة
+  location    String?     // موقع التخزين
+  supplier    String?     // المورد
+  notes       String?     // ملاحظات
+  transactions MaterialTransaction[] // سجل المعاملات
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model MaterialTransaction {
+  id          String    @id @default(cuid()) @map("_id")
+  materialId  String
+  material    Material  @relation(fields: [materialId], references: [id])
+  type        String    // IN or OUT
+  quantity    Float     // الكمية
+  price       Float?    // السعر وقت المعاملة
+  reference   String?   // رقم الفاتورة أو أمر الشراء
+  notes       String?   // ملاحظات
+  createdAt   DateTime  @default(now())
+  createdBy   String    // اسم المستخدم
 }
 

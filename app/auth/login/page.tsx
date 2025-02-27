@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { TextField, Button, Paper, Typography, Box } from '@mui/material';
-import { toast } from 'react-toastify';
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { TextField, Button, Paper, Typography, Box, Link } from "@mui/material";
+import { toast } from "react-toastify";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,37 +15,32 @@ export default function LoginPage() {
     setLoading(true);
 
     const formData = new FormData(event.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
     try {
-      const result = await signIn('credentials', {
+      const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
       });
 
       if (result?.error) {
-        toast.error('خطأ في البريد الإلكتروني أو كلمة المرور');
+        toast.error("خطأ في البريد الإلكتروني أو كلمة المرور");
       } else {
-        router.push('/dashboard');
-        toast.success('تم تسجيل الدخول بنجاح');
+        router.push("/dashboard");
+        toast.success("تم تسجيل الدخول بنجاح");
       }
     } catch (error) {
-      toast.error('حدث خطأ أثناء تسجيل الدخول');
+      toast.error("حدث خطأ أثناء تسجيل الدخول");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box
-      className="min-h-screen flex items-center justify-center bg-background p-4"
-    >
-      <Paper
-        elevation={3}
-        className="p-8 max-w-md w-full"
-      >
+    <Box className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Paper elevation={3} className="p-8 max-w-md w-full">
         <Typography
           component="h1"
           variant="h4"
@@ -83,8 +78,16 @@ export default function LoginPage() {
             disabled={loading}
             className="bg-primary hover:bg-primary/90 mt-4"
           >
-            {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
+            {loading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
           </Button>
+          <div className="flex justify-center">
+            <Link
+              href="/auth/register"
+              className="text-primary hover:text-primary/90"
+            >
+              انشاء حساب
+            </Link>
+          </div>
         </form>
       </Paper>
     </Box>

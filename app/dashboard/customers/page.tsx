@@ -1,57 +1,56 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { DataTable } from '@/components/data-table';
-import { PageHeader } from '@/components/page-header';
-import { Loading } from '@/components/loading';
-import { ConfirmDialog } from '@/components/confirm-dialog';
-import { CustomerFormDialog } from '@/components/customers/customer-form-dialog';
-import { SearchInput } from '@/components/search-input';
-import { Box, Chip } from '@mui/material';
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { DataTable } from "@/components/data-table";
+import { PageHeader } from "@/components/page-header";
+import { Loading } from "@/components/loading";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { CustomerFormDialog } from "@/components/customers/customer-form-dialog";
+import { SearchInput } from "@/components/search-input";
+import { Box, Chip, Button } from "@mui/material";
+import { ExcelImportDialog } from "@/components/customers/excel-import-dialog";
+import {
+  IconFileExport,
+  IconFileImport,
+  IconPrinter,
+} from "@tabler/icons-react";
+import { exportToExcel } from "@/lib/excel";
+import { generateCustomerReport } from "@/lib/pdf";
+import { toast } from "react-toastify";
 
 const columns = [
-  { 
-    id: 'name', 
-    label: 'الاسم',
+  {
+    id: "name",
+    label: "الاسم",
   },
   {
-    id: 'phone',
-    label: 'رقم الهاتف',
+    id: "phone",
+    label: "رقم الهاتف",
   },
   {
-    id: 'email',
-    label: 'البريد الإلكتروني',
+    id: "address",
+    label: "العنوان",
   },
   {
-    id: 'address',
-    label: 'العنوان',
-  },
-  {
-    id: 'type',
-    label: 'النوع',
+    id: "type",
+    label: "النوع",
     format: (value: string) => {
       const typeMap = {
-        INDIVIDUAL: { label: 'فرد', color: 'primary' },
-        COMPANY: { label: 'شركة', color: 'secondary' },
+        WHOLESALE: { label: "قطاعي", color: "primary" },
+        RETAIL: { label: "جملة", color: "secondary" },
       };
       const type = typeMap[value as keyof typeof typeMap];
-      return (
-        <Chip
-          label={type.label}
-          color={type.color as any}
-          size="small"
-        />
-      );
+      return <Chip label={type.label} color={type.color as any} size="small" />;
     },
   },
   {
-    id: 'balance',
-    label: 'الرصيد',
+    id: "balance",
+    label: "الرصيد",
     format: (value: number) =>
-      value.toLocaleString('ar-EG', {
-        style: 'currency',
-        currency: 'EGP',
+      value.toLocaleString("ar-EG", {
+        style: "currency",
+        currency: "EGP",
       }),
   },
 ];
@@ -63,9 +62,14 @@ export default function CustomersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [formLoading, setFormLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const { data, isLoading, refetch: refetchCustomers } = useQuery({
-    queryKey: ['customers', page, rowsPerPage, searchQuery],
+  const [searchQuery, setSearchQuery] = useState("");
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const {
+    data,
+    isLoading,
+    refetch: refetchCustomers,
+  } = useQuery({
+    queryKey: ["customers", page, rowsPerPage, searchQuery],
     queryFn: () =>
       fetch(
         `/api/customers?page=${
@@ -90,41 +94,107 @@ export default function CustomersPage() {
   };
 
   const handleFormSubmit = async (formData: any) => {
+    const loadingToast = toast.loading(
+      selectedCustomer ? "جاري تحديث البيانات..." : "جاري إضافة العميل..."
+    );
     setFormLoading(true);
     try {
       if (selectedCustomer) {
-        await fetch('/api/customers', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+        await fetch("/api/customers", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...formData,
             id: selectedCustomer.id,
           }),
         });
+        toast.update(loadingToast, {
+          render: "تم تحديث بيانات العميل بنجاح",
+          type: "success",
+        });
       } else {
-        await fetch('/api/customers', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        await fetch("/api/customers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
+        });
+        toast.update(loadingToast, {
+          render: "تم إضافة العميل بنجاح",
+          type: "success",
         });
       }
       setFormOpen(false);
       refetchCustomers();
+    } catch (error) {
+      toast.update(loadingToast, {
+        render: "حدث خطأ أثناء حفظ البيانات",
+        type: "error",
+      });
+      console.error(error);
     } finally {
       setFormLoading(false);
     }
   };
 
   const handleConfirmDelete = async () => {
+    const loadingToast = toast.loading("جاري حذف العميل...");
     setFormLoading(true);
     try {
       await fetch(`/api/customers?id=${selectedCustomer.id}`, {
-        method: 'DELETE',
+        method: "DELETE",
+      });
+      toast.update(loadingToast, {
+        render: "تم حذف العميل بنجاح",
+        type: "success",
       });
       setDeleteDialogOpen(false);
       refetchCustomers();
+    } catch (error) {
+      toast.update(loadingToast, {
+        render: "حدث خطأ أثناء حذف العميل",
+        type: "error",
+      });
+      console.error(error);
     } finally {
       setFormLoading(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    const loadingToast = toast.loading("جاري تصدير البيانات...");
+    try {
+      const response = await fetch("/api/customers/export");
+      const data = await response.json();
+      exportToExcel(data, "customers");
+      toast.update(loadingToast, {
+        render: "تم تصدير البيانات بنجاح",
+        type: "success",
+      });
+    } catch (error) {
+      toast.update(loadingToast, {
+        render: "حدث خطأ أثناء تصدير البيانات",
+        type: "error",
+      });
+      console.error("Error exporting data:", error);
+    }
+  };
+
+  const handlePrint = async () => {
+    const loadingToast = toast.loading("جاري إنشاء التقرير...");
+    try {
+      const response = await fetch("/api/customers/export");
+      const data = await response.json();
+      await generateCustomerReport(data);
+      toast.update(loadingToast, {
+        render: "تم إنشاء التقرير بنجاح",
+        type: "success",
+      });
+    } catch (error) {
+      toast.update(loadingToast, {
+        render: "حدث خطأ أثناء إنشاء التقرير",
+        type: "error",
+      });
+      console.error("Error generating report:", error);
     }
   };
 
@@ -138,6 +208,31 @@ export default function CustomersPage() {
         title="إدارة العملاء"
         onAdd={handleAdd}
         addLabel="إضافة عميل"
+        actions={
+          <div className="flex gap-2">
+            <Button
+              variant="outlined"
+              startIcon={<IconFileImport />}
+              onClick={() => setImportDialogOpen(true)}
+            >
+              استيراد
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<IconFileExport />}
+              onClick={handleExportExcel}
+            >
+              تصدير
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<IconPrinter />}
+              onClick={handlePrint}
+            >
+              طباعة
+            </Button>
+          </div>
+        }
       />
 
       <Box className="mb-6">
@@ -175,6 +270,12 @@ export default function CustomersPage() {
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteDialogOpen(false)}
         loading={formLoading}
+      />
+
+      <ExcelImportDialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        onSuccess={refetchCustomers}
       />
     </div>
   );

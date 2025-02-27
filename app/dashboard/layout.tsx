@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter, usePathname } from "next/navigation";
 import {
   AppBar,
   Box,
@@ -16,7 +16,7 @@ import {
   ListItemText,
   Toolbar,
   Typography,
-} from '@mui/material';
+} from "@mui/material";
 import {
   IconMenu2,
   IconHome,
@@ -26,6 +26,8 @@ import {
   IconUsers,
   IconBuildingStore,
   IconReportMoney,
+  IconBuildingWarehouse,
+  IconBottleFilled,
   IconSettings,
   IconShoppingCart,
   IconDashboard,
@@ -33,60 +35,89 @@ import {
   IconPackage,
   IconTruckDelivery,
   IconUserCircle,
-} from '@tabler/icons-react';
+  IconBuilding,
+  IconPackageImport,
+  IconFilter,
+} from "@tabler/icons-react";
 
 const drawerWidth = 280;
 
 const menuItems = [
   {
-    title: 'لوحة التحكم',
-    path: '/dashboard',
+    title: "لوحة التحكم",
+    path: "/dashboard",
     icon: <IconDashboard />,
   },
   {
-    title: 'المبيعات',
-    path: '/dashboard/sales',
+    title: "المنتجات",
+    path: "/dashboard/products",
+    icon: <IconBottleFilled />,
+  },
+  {
+    title: "المبيعات",
+    path: "/dashboard/sales",
     icon: <IconCash />,
   },
   {
-    title: 'المشتريات',
-    path: '/dashboard/purchases',
+    title: "المشتريات",
+    path: "/dashboard/purchases",
     icon: <IconShoppingCart />,
   },
+
   {
-    title: 'المخزون',
-    path: '/dashboard/inventory',
+    title: "المخازن",
+    path: "/dashboard/warehouses",
+    icon: <IconBuildingWarehouse />,
+  },
+  {
+    title: "المواد",
+    path: "/dashboard/materials",
+    icon: <IconFilter />,
+  },
+  {
+    title: "المخزون",
+    path: "/dashboard/inventory",
     icon: <IconPackage />,
   },
   {
-    title: 'العملاء',
-    path: '/dashboard/customers',
+    title: "العملاء",
+    path: "/dashboard/customers",
     icon: <IconUsers />,
   },
   {
-    title: 'الموردين',
-    path: '/dashboard/suppliers',
-    icon: <IconTruck />,
+    title: "الموردين",
+    path: "/dashboard/suppliers",
+    icon: <IconPackageImport />,
   },
   {
-    title: 'المندوبين',
-    path: '/dashboard/representatives',
+    title: "المندوبين",
+    path: "/dashboard/representatives",
     icon: <IconUsers />,
   },
   {
-    title: 'النقل',
-    path: '/dashboard/transport',
+    title: "النقل",
+    path: "/dashboard/transport",
     icon: <IconTruckDelivery />,
   },
   {
-    title: 'المستخدمين',
-    path: '/dashboard/users',
-    icon: <IconUserCircle />,
-    roles: ['ADMIN'],
+    title: "الأصول الثابتة",
+    path: "/dashboard/assets",
+    icon: <IconBuilding />,
   },
   {
-    title: 'الإعدادات',
-    path: '/dashboard/settings',
+    title: "الخزينة",
+    path: "/dashboard/treasury",
+    icon: <IconCash />,
+  },
+  {
+    title: "المستخدمين",
+    path: "/dashboard/users",
+    icon: <IconUserCircle />,
+    roles: ["ADMIN"],
+  },
+  {
+    title: "الإعدادات",
+    path: "/dashboard/settings",
     icon: <IconSettings />,
   },
 ];
@@ -98,14 +129,15 @@ export default function DashboardLayout({
 }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return <div>Loading...</div>;
   }
 
   if (!session) {
-    router.push('/auth/login');
+    router.push("/auth/login");
     return null;
   }
 
@@ -121,10 +153,15 @@ export default function DashboardLayout({
         </Typography>
       </Toolbar>
       <List>
-        {menuItems.map((item) => (
-          <ListItem key={item.title} disablePadding>
-            <ListItemButton
-              onClick={() => {
+        {menuItems.map((item) => {
+          if (item.roles && !item.roles.includes(session.user?.role)) {
+            return null;
+          }
+          let isActive = pathname === item.path;
+          return (
+            <ListItem key={item.title} disablePadding className={`${isActive ? "bg-primary " : ""}`}>
+              <ListItemButton
+                onClick={() => {
                 router.push(item.path);
                 setMobileOpen(false);
               }}
@@ -132,32 +169,38 @@ export default function DashboardLayout({
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.title} />
             </ListItemButton>
-          </ListItem>
-        ))}
+            </ListItem>
+          );
+        })}
       </List>
     </div>
   );
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex" }}>
       <CssBaseline />
       <AppBar
         position="fixed"
-        
         sx={{
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           left: { sm: `${drawerWidth}px` },
           mr: { sm: `${drawerWidth}px` },
-          bgcolor: 'primary.light',
+          bgcolor: "primary.light",
         }}
       >
-        <Toolbar sx={{ display: 'flex', justifyContent: 'space-between',width: '100%' }}>
+        <Toolbar
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            width: "100%",
+          }}
+        >
           <IconButton
             color="inherit"
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ display: { sm: 'none' } }}
+            sx={{ display: { sm: "none" } }}
           >
             <IconMenu2 />
           </IconButton>
@@ -179,11 +222,11 @@ export default function DashboardLayout({
             keepMounted: true,
           }}
           sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
+            display: { xs: "block", sm: "none" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
               width: drawerWidth,
-              direction: 'rtl',
+              direction: "rtl",
             },
           }}
         >
@@ -192,9 +235,9 @@ export default function DashboardLayout({
         <Drawer
           variant="permanent"
           sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
+            display: { xs: "none", sm: "block" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
               width: drawerWidth,
             },
           }}

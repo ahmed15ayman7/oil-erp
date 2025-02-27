@@ -8,6 +8,7 @@ interface ApiOptions {
   onError?: (error: Error) => void;
   successMessage?: string;
   errorMessage?: string;
+  contactType?: string;
 }
 
 export function useApi() {
@@ -22,6 +23,7 @@ export function useApi() {
       onError,
       successMessage,
       errorMessage,
+      contactType,
       ...fetchOptions
     } = options || {};
 
@@ -31,6 +33,7 @@ export function useApi() {
         ...fetchOptions,
         headers: {
           'Content-Type': 'application/json',
+          'Contact-Type': contactType || 'application/json',
           ...fetchOptions?.headers,
         },
       });

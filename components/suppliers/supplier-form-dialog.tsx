@@ -14,6 +14,10 @@ import {
   FormControlLabel,
   Switch,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 
 interface SupplierFormDialogProps {
   open: boolean;
@@ -33,18 +37,11 @@ export function SupplierFormDialog({
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
-    email: '',
     address: '',
-    type: 'LOCAL',
     taxNumber: '',
-    commercialRegister: '',
-    bankName: '',
-    bankAccount: '',
-    swift: '',
-    iban: '',
-    creditLimit: 0,
-    creditPeriod: 30,
     isActive: true,
+    balance: 0,
+    lastPurchaseDate: null,
     notes: '',
   });
 
@@ -55,18 +52,11 @@ export function SupplierFormDialog({
       setFormData({
         name: '',
         phone: '',
-        email: '',
         address: '',
-        type: 'LOCAL',
         taxNumber: '',
-        commercialRegister: '',
-        bankName: '',
-        bankAccount: '',
-        swift: '',
-        iban: '',
-        creditLimit: 0,
-        creditPeriod: 30,
         isActive: true,
+        balance: 0,
+        lastPurchaseDate: null,
         notes: '',
       });
     }
@@ -120,28 +110,7 @@ export function SupplierFormDialog({
                 required
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="البريد الإلكتروني"
-                type="email"
-                value={formData.email}
-                onChange={handleChange('email')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                select
-                fullWidth
-                label="النوع"
-                value={formData.type}
-                onChange={handleChange('type')}
-                required
-              >
-                <MenuItem value="LOCAL">محلي</MenuItem>
-                <MenuItem value="INTERNATIONAL">دولي</MenuItem>
-              </TextField>
-            </Grid>
+           
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -155,74 +124,21 @@ export function SupplierFormDialog({
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="الرقم الضريبي"
+                label="الرصيد المستحق"
+                value={formData.balance}
+                onChange={handleChange('balance')}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label=" الرقم الضريبي (اختياري)"
                 value={formData.taxNumber}
                 onChange={handleChange('taxNumber')}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="السجل التجاري"
-                value={formData.commercialRegister}
-                onChange={handleChange('commercialRegister')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="اسم البنك"
-                value={formData.bankName}
-                onChange={handleChange('bankName')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="رقم الحساب"
-                value={formData.bankAccount}
-                onChange={handleChange('bankAccount')}
-              />
-            </Grid>
-            {formData.type === 'INTERNATIONAL' && (
-              <>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="SWIFT"
-                    value={formData.swift}
-                    onChange={handleChange('swift')}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="IBAN"
-                    value={formData.iban}
-                    onChange={handleChange('iban')}
-                  />
-                </Grid>
-              </>
-            )}
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="حد الائتمان"
-                value={formData.creditLimit}
-                onChange={handleChange('creditLimit')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="فترة الائتمان (بالأيام)"
-                value={formData.creditPeriod}
-                onChange={handleChange('creditPeriod')}
-              />
-            </Grid>
-            <Grid item xs={12}>
+           
+            <Grid item xs={6}>
               <FormControlLabel
                 control={
                   <Switch
@@ -232,6 +148,15 @@ export function SupplierFormDialog({
                 }
                 label="نشط"
               />
+            </Grid>
+            <Grid item xs={6}>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="آخر توريد"
+                  value={formData.lastPurchaseDate}
+                  onChange={(value) => handleChange('lastPurchaseDate')(value)}
+                />
+              </LocalizationProvider>
             </Grid>
             <Grid item xs={12}>
               <TextField

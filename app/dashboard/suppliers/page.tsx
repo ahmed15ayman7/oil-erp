@@ -21,20 +21,16 @@ const columns = [
     label: 'رقم الهاتف',
   },
   {
-    id: 'email',
-    label: 'البريد الإلكتروني',
-  },
-  {
     id: 'address',
     label: 'العنوان',
   },
   {
-    id: 'type',
-    label: 'النوع',
+    id: 'isActive',
+    label: 'الحالة',
     format: (value: string) => {
       const typeMap = {
-        LOCAL: { label: 'محلي', color: 'primary' },
-        INTERNATIONAL: { label: 'دولي', color: 'secondary' },
+        true: { label: 'نشط', color: 'success' },
+        false: { label: 'غير نشط', color: 'error' },
       };
       const type = typeMap[value as keyof typeof typeMap];
       return (

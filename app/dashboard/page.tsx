@@ -1,24 +1,60 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { Grid } from '@mui/material';
-import { Loading } from '@/components/loading';
-import { PageHeader } from '@/components/page-header';
-import { StatsCard } from '@/components/stats-card';
+import { useQuery } from "@tanstack/react-query";
+import { Grid } from "@mui/material";
+import { Loading } from "@/components/loading";
+import { PageHeader } from "@/components/page-header";
+import { StatsCard } from "@/components/stats-card";
 import {
   IconBox,
   IconTruck,
   IconCoin,
   IconReportMoney,
-} from '@tabler/icons-react';
-import { useApi } from '@/hooks/use-api';
+} from "@tabler/icons-react";
+import { useApi } from "@/hooks/use-api";
+import { StatsCards } from "@/components/dashboard/stats-cards";
+import { SalesChart } from "@/components/dashboard/sales-chart";
+import { CategoriesManagement } from "@/components/dashboard/categories-management";
+import { UnitsManagement } from "@/components/dashboard/units-management";
 
 export default function DashboardPage() {
   const api = useApi();
   const { data: stats, isLoading } = useQuery({
-    queryKey: ['dashboardStats'],
-    queryFn: () => api.get('/api/dashboard/stats'),
+    queryKey: ["dashboardStats"],
+    queryFn: () => api.get("/api/dashboard/stats"),
   });
+  const { data: stats2, isLoading: statsLoading } = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: () => fetch("/api/dashboard/stats2").then((res) => res.json()),
+  });
+
+  const { data: salesData, isLoading: salesLoading } = useQuery({
+    queryKey: ["dashboard-sales"],
+    queryFn: () => fetch("/api/dashboard/sales").then((res) => res.json()),
+  });
+
+  const {
+    data: categories,
+    isLoading: categoriesLoading,
+    refetch: refetchCategories,
+  } = useQuery({
+    queryKey: ["categories"],
+    
+    queryFn: () => fetch("/api/categories").then((res) => res.json()),
+  });
+
+  const {
+    data: units,
+    isLoading: unitsLoading,
+    refetch: refetchUnits,
+  } = useQuery({
+    queryKey: ["units"],
+    queryFn: () => fetch("/api/units").then((res) => res.json()),
+  });
+
+  if (statsLoading || salesLoading || categoriesLoading || unitsLoading) {
+    return <Loading />;
+  }
 
   if (isLoading) {
     return <Loading />;
@@ -26,34 +62,36 @@ export default function DashboardPage() {
 
   const statCards = [
     {
-      title: 'المخزون',
-      value: stats?.inventory.toLocaleString() || '0',
+      title: "المخزون",
+      value: stats?.inventory.toLocaleString() || "0",
       icon: <IconBox className="w-8 h-8" />,
-      color: 'primary.main',
+      color: "primary.main",
     },
     {
-      title: 'المركبات النشطة',
-      value: stats?.activeVehicles.toLocaleString() || '0',
+      title: "المركبات النشطة",
+      value: stats?.activeVehicles.toLocaleString() || "0",
       icon: <IconTruck className="w-8 h-8" />,
-      color: 'success.main',
+      color: "success.main",
     },
     {
-      title: 'المبيعات اليوم',
-      value: stats?.todaySales.toLocaleString('ar-EG', {
-        style: 'currency',
-        currency: 'EGP',
-      }) || '0',
+      title: "المبيعات اليوم",
+      value:
+        stats?.todaySales.toLocaleString("ar-EG", {
+          style: "currency",
+          currency: "EGP",
+        }) || "0",
       icon: <IconCoin className="w-8 h-8" />,
-      color: 'info.main',
+      color: "info.main",
     },
     {
-      title: 'رصيد الخزنة',
-      value: stats?.treasury.toLocaleString('ar-EG', {
-        style: 'currency',
-        currency: 'EGP',
-      }) || '0',
+      title: "رصيد الخزنة",
+      value:
+        stats?.treasury.toLocaleString("ar-EG", {
+          style: "currency",
+          currency: "EGP",
+        }) || "0",
       icon: <IconReportMoney className="w-8 h-8" />,
-      color: 'warning.main',
+      color: "warning.main",
     },
   ];
 
@@ -69,7 +107,22 @@ export default function DashboardPage() {
         ))}
       </Grid>
 
-      {/* Add more dashboard sections here */}
+      <StatsCards stats={stats2} />
+
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={8}>
+          <SalesChart data={salesData} />
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <div className="space-y-3">
+            <CategoriesManagement
+              categories={categories}
+              onUpdate={refetchCategories}
+            />
+            <UnitsManagement units={units} onUpdate={refetchUnits} />
+          </div>
+        </Grid>
+      </Grid>
     </div>
   );
 }

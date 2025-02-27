@@ -1,9 +1,10 @@
 import { getServerSession, NextAuthOptions } from "next-auth";
 import { ApiError } from "./api-error";
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import { prisma } from "./prisma"
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { prisma } from "./prisma";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { Adapter } from "next-auth/adapters";
+import { UserRole } from "@prisma/client";
 
 export async function getAuthSession() {
   const session = await getServerSession(authOptions);
@@ -13,11 +14,11 @@ export async function getAuthSession() {
   return session;
 }
 
-export function checkPermissions(userRole: string, allowedRoles: string[]) {
-  if (!allowedRoles.includes(userRole)) {
-    throw new ApiError("Forbidden", 403);
-  }
-}
+// export function checkPermissions(userRole: UserRole, allowedRoles: UserRole[]) {
+//   if (!allowedRoles.includes(userRole)) {
+//     throw new ApiError("Forbidden", 403);
+//   }
+// }
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as Adapter,
@@ -30,6 +31,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.error("Invalid credentials");
           throw new Error("Invalid credentials");
         }
 
@@ -40,15 +42,20 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user) {
+          console.error("User not found");
           throw new Error("Invalid credentials");
         }
 
-        const isValid = await verifyPassword(credentials.password, user.password);
+        const isValid = await verifyPassword(
+          credentials.password,
+          user.password
+        );
 
         if (!isValid) {
+          console.log("Invalid credentials");
           throw new Error("Invalid credentials");
         }
-
+        console.log("User found");
         return {
           id: user.id,
           email: user.email,
@@ -98,12 +105,12 @@ export async function recordCheckOut(repId: string) {
       checkOut: null,
     },
     orderBy: {
-      checkIn: 'desc',
+      checkIn: "desc",
     },
   });
 
   if (!lastAttendance) {
-    throw new Error('لا يوجد تسجيل دخول مفتوح');
+    throw new Error("لا يوجد تسجيل دخول مفتوح");
   }
 
   return await prisma.attendanceRecord.update({
@@ -161,12 +168,17 @@ export async function getRepresentativeReport(
 
   // حساب إحصائيات المبيعات
   const totalSales = sales.reduce((sum, sale) => sum + sale.total, 0);
-  const productsSold = sales.reduce((sum, sale) => sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0);
+  const productsSold = sales.reduce(
+    (sum, sale) =>
+      sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
+    0
+  );
 
   // حساب ساعات العمل
   const workingHours = attendance.reduce((total, record) => {
     if (!record.checkOut) return total;
-    const hours = (record.checkOut.getTime() - record.checkIn.getTime()) / (1000 * 60 * 60);
+    const hours =
+      (record.checkOut.getTime() - record.checkIn.getTime()) / (1000 * 60 * 60);
     return total + hours;
   }, 0);
 

@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DataTable } from '@/components/data-table';
@@ -166,10 +165,6 @@ export default function PurchasesPage() {
     }
   };
 
-  if (isLoading) {
-    return <Loading />;
-  }
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -185,7 +180,7 @@ export default function PurchasesPage() {
         />
       </Box>
 
-      <DataTable
+     {isLoading?<Loading/>: <DataTable
         columns={columns}
         data={data?.purchases || []}
         loading={isLoading}
@@ -196,7 +191,7 @@ export default function PurchasesPage() {
         onRowsPerPageChange={setRowsPerPage}
         onEdit={handleEdit}
         onDelete={handleDelete}
-      />
+      />}
 
       <PurchaseFormDialog
         open={formOpen}

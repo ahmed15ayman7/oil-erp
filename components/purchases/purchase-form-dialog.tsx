@@ -17,6 +17,9 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
 import { IconTrash, IconPlus } from '@tabler/icons-react';
 import { useApi } from '@/hooks/use-api';
 
@@ -39,8 +42,8 @@ export function PurchaseFormDialog({
   const [formData, setFormData] = useState({
     supplierId: '',
     invoiceNumber: '',
-    date: new Date(),
-    dueDate: null as Date | null,
+    date: dayjs(),
+    dueDate: null as dayjs.Dayjs | null,
     items: [
       {
         productId: '',
@@ -75,14 +78,14 @@ export function PurchaseFormDialog({
     if (initialData) {
       setFormData({
         ...initialData,
-        date: new Date(initialData.date),
+        date: dayjs(initialData.date),
         dueDate: initialData.dueDate ? new Date(initialData.dueDate) : null,
       });
     } else {
       setFormData({
         supplierId: '',
         invoiceNumber: '',
-        date: new Date(),
+        date: dayjs(),
         dueDate: null,
         items: [
           {
@@ -244,24 +247,28 @@ export function PurchaseFormDialog({
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <DatePicker
-                label="تاريخ الفاتورة"
-                value={formData.date}
-                onChange={handleChange('date')}
-                slotProps={{
-                  textField: { fullWidth: true },
-                }}
-              />
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="تاريخ الفاتورة"
+                  value={formData.date}
+                  onChange={handleChange('date')}
+                  slotProps={{
+                    textField: { fullWidth: true },
+                  }}
+                />
+              </LocalizationProvider>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <DatePicker
-                label="تاريخ الاستحقاق"
-                value={formData.dueDate}
-                onChange={handleChange('dueDate')}
-                slotProps={{
-                  textField: { fullWidth: true },
-                }}
-              />
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="تاريخ الاستحقاق"
+                  value={formData.dueDate}
+                  onChange={handleChange('dueDate')}
+                  slotProps={{
+                    textField: { fullWidth: true },
+                  }}
+                />
+              </LocalizationProvider>
             </Grid>
 
             {/* Items */}
