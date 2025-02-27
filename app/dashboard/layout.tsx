@@ -75,7 +75,7 @@ const menuItems = [
     icon: <IconFilter />,
   },
   {
-    title: "المخزون",
+    title: "المنتج النهائي",
     path: "/dashboard/inventory",
     icon: <IconPackage />,
   },
