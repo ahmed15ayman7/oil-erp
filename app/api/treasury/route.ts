@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-
+import { getAuthSession } from "@/lib/auth";
+import{Prisma} from "@prisma/client"
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -12,20 +12,18 @@ export async function GET(req: Request) {
     const transactions = await prisma.transaction.findMany({
       where: {
         OR: [
-          { description: { contains: search, mode: "insensitive" } },
-          { category: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: Prisma.QueryMode.insensitive  } },
         ],
       },
       skip: (page - 1) * limit,
       take: limit,
-      orderBy: { date: "desc" },
+      orderBy: { createdAt: "desc" },
     });
 
     const total = await prisma.transaction.count({
       where: {
         OR: [
-          { description: { contains: search, mode: "insensitive" } },
-          { category: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: Prisma.QueryMode.insensitive  } },
         ],
       },
     });
@@ -52,7 +50,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
+    const session = await getAuthSession();
     if (!session) {
       return new NextResponse("Unauthorized", { status: 401 });
     }

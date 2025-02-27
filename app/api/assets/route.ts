@@ -18,11 +18,7 @@ export async function GET(req: Request) {
       where: {
         OR: [
           { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
-          {
-            type: {
-              equals: search as AssetType,
-            },
-          },
+
         ],
       },
       skip: (page - 1) * limit,
@@ -34,11 +30,6 @@ export async function GET(req: Request) {
       where: {
         OR: [
           { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
-          {
-            type: {
-              equals: search as AssetType,
-            },
-          },
         ],
       },
     });
