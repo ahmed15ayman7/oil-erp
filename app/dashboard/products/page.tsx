@@ -10,7 +10,7 @@ import { ProductFormDialog } from '@/components/products/product-form-dialog';
 import { SearchInput } from '@/components/search-input';
 import { Box, Chip, Grid, MenuItem, TextField, Button, Paper, Stack } from '@mui/material';
 import { useApi } from '@/hooks/use-api';
-import { IconFileSpreadsheet, IconPrinter } from "@tabler/icons-react";
+import { IconFileSpreadsheet, IconPlus, IconPrinter } from "@tabler/icons-react";
 import * as ExcelJS from "exceljs";
 import { generateProductsReport } from "@/lib/pdf";
 import { Product } from '@prisma/client';
@@ -216,6 +216,31 @@ export default function ProductsPage() {
       <PageHeader
         title="إدارة المنتجات"
         onAdd={handleAdd}
+        actions={
+          <div className="flex gap-2">
+            <Button
+              variant="contained"
+              startIcon={<IconPlus />}
+              onClick={handleAdd}
+            >
+              إضافة منتج
+            </Button>
+            <Button
+            variant="outlined"
+            startIcon={<IconFileSpreadsheet />}
+            onClick={exportToExcel}
+          >
+            تصدير Excel
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<IconPrinter />}
+            onClick={printPDF}
+          >
+            طباعة PDF
+          </Button>
+          </div>
+        }
         addLabel="إضافة منتج"
       />
 
@@ -246,24 +271,6 @@ export default function ProductsPage() {
         </Grid>
       </Box>
 
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Stack direction="row" spacing={2}>
-          <Button
-            variant="contained"
-            startIcon={<IconFileSpreadsheet />}
-            onClick={exportToExcel}
-          >
-            تصدير Excel
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<IconPrinter />}
-            onClick={printPDF}
-          >
-            طباعة PDF
-          </Button>
-        </Stack>
-      </Paper>
 
       {isLoading ? <Loading /> : data && <DataTable
         columns={columns}

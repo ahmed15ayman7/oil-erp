@@ -27,6 +27,7 @@ interface Action {
   icon: JSX.Element;
   label: string;
   onClick: (row: any) => void;
+  show?: (row: any) => boolean;
 }
 
 interface DataTableProps {
@@ -102,7 +103,11 @@ export function DataTable({
                 {(onEdit || onDelete || additionalActions.length > 0) && (
                   <TableCell align="left">
                     <Box className="flex gap-1">
-                      {additionalActions.map((action, index) => (
+                      {additionalActions.map((action, index) =>{
+                        if(action.show && !action.show(row)){
+                          return null;
+                        }
+                        return (
                         <Tooltip key={index} title={action.label}>
                           <IconButton
                             size="small"
@@ -112,7 +117,8 @@ export function DataTable({
                             {action.icon}
                           </IconButton>
                         </Tooltip>
-                      ))}
+                      );
+                      })}
                       {onEdit && (
                         <Tooltip title="تعديل">
                           <IconButton

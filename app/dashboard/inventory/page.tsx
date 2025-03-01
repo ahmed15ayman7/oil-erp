@@ -167,7 +167,7 @@ export default function InventoryPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="إدارة المخزون"
+        title="إدارة المنتجات النهائية"
         actions={
           <div className="flex gap-2">
             <Button

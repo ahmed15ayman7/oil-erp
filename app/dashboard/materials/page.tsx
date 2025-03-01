@@ -7,12 +7,13 @@ import { PageHeader } from '@/components/page-header';
 import { Loading } from '@/components/loading';
 import { Box, Button, Chip, Grid } from '@mui/material';
 import { useApi } from '@/hooks/use-api';
-import { IconFileExport, IconHistory, IconPlus } from '@tabler/icons-react';
+import { IconFileExport, IconHistory, IconPlus, IconExchange } from '@tabler/icons-react';
 import { SearchInput } from '@/components/search-input';
 import { MaterialFormDialog } from '@/components/materials/material-form-dialog';
 import { StockMovementDialog } from '@/components/inventory/stock-movement-dialog';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { ImportDialog } from '@/components/materials/import-dialog';
+import { ProductConversionDialog } from '@/app/components/materials/product-conversion-dialog';
 
 interface Column {
   id: string;
@@ -96,6 +97,7 @@ export default function MaterialsPage() {
   const [selectedMaterial, setSelectedMaterial] = useState<any>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [conversionDialogOpen, setConversionDialogOpen] = useState(false);
   const api = useApi();
 
   const {
@@ -128,6 +130,11 @@ export default function MaterialsPage() {
   const handleMovement = (material: any) => {
     setSelectedMaterial(material);
     setMovementDialogOpen(true);
+  };
+
+  const handleConversion = (material: any) => {
+    setSelectedMaterial(material);
+    setConversionDialogOpen(true);
   };
 
   const handleFormSubmit = async (formData: any) => {
@@ -213,6 +220,12 @@ export default function MaterialsPage() {
             label: 'حركة المخزون',
             onClick: handleMovement,
           },
+          {
+            icon: <IconExchange />,
+            label: 'تحويل إلى منتج',
+            onClick: handleConversion,
+            show: (row: any) => row.type === 'RAW_MATERIAL',
+          },
         ]}
       />}
 
@@ -242,6 +255,13 @@ export default function MaterialsPage() {
       <ImportDialog
         open={importDialogOpen}
         onClose={() => setImportDialogOpen(false)}
+        onSuccess={refetchMaterials}
+      />
+
+      <ProductConversionDialog
+        open={conversionDialogOpen}
+        onClose={() => setConversionDialogOpen(false)}
+        material={selectedMaterial}
         onSuccess={refetchMaterials}
       />
     </div>

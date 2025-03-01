@@ -91,6 +91,7 @@ model Category {
   id          String    @id @default(cuid()) @map("_id")
   name        String    @unique
   description String?
+  value       Int?
   products    Product[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -458,8 +459,8 @@ model WarehouseItem {
 }
 
 enum MaterialType {
-  RAW_MATERIAL      // المواد خام
   PACKAGING         // مواد تعبئة
+  RAW_MATERIAL      // المواد خام
   BOTTLE            // الزجاجات
   CARTON            // الكراتين
   BOTTLE_CAP        // غطاء الزجاجة

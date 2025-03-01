@@ -10,7 +10,7 @@ import { SaleFormDialog } from '@/components/sales/sale-form-dialog';
 import { SearchInput } from '@/components/search-input';
 import { Box, Chip, Grid, MenuItem, TextField, Button, Paper, Stack } from '@mui/material';
 import { useApi } from '@/hooks/use-api';
-import { IconFileSpreadsheet, IconPrinter } from '@tabler/icons-react';
+import { IconFileSpreadsheet, IconPlus, IconPrinter } from '@tabler/icons-react';
 import * as ExcelJS from 'exceljs';
 import { generateSalesReport } from '@/lib/pdf';
 import { Sale } from '@prisma/client';
@@ -236,7 +236,13 @@ export default function SalesPage() {
       <PageHeader
         title="إدارة المبيعات"
         onAdd={handleAdd}
-        addLabel="إضافة فاتورة"
+        actions={
+          <div className="flex gap-2">
+            <Button variant="contained" startIcon={<IconPlus />} onClick={handleAdd}>إضافة فاتورة</Button>
+            <Button variant="outlined" startIcon={<IconFileSpreadsheet />} onClick={exportToExcel}>تصدير Excel</Button>
+            <Button variant="outlined" startIcon={<IconPrinter />} onClick={printPDF}>طباعة PDF</Button>
+          </div>
+        }
       />
 
       <Box className="mb-6">
@@ -246,26 +252,6 @@ export default function SalesPage() {
               onSearch={setSearchQuery}
               placeholder="البحث في الفواتير..."
             />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2, mb: 2 }}>
-              <Stack direction="row" spacing={2}>
-                <Button
-                  variant="contained"
-                  startIcon={<IconFileSpreadsheet />}
-                  onClick={exportToExcel}
-                >
-                  تصدير Excel
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<IconPrinter />}
-                  onClick={printPDF}
-                >
-                  طباعة PDF
-                </Button>
-              </Stack>
-            </Paper>
           </Grid>
         </Grid>
       </Box>

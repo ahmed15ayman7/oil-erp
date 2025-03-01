@@ -23,6 +23,7 @@ interface category {
     id: string;
     name: string;
     description?: string;
+    value?: number;
 }
 interface Category {
     categories: category[],
@@ -43,11 +44,11 @@ export function CategoriesManagement({
 }: CategoriesManagementProps) {
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<category | null>(null);
-  const [formData, setFormData] = useState({ name: "", description: "" });
+  const [formData, setFormData] = useState({ name: "", description: "", value: 0 });
 
   const handleAdd = () => {
     setSelectedCategory(null);
-    setFormData({ name: "", description: "" });
+    setFormData({ name: "", description: "", value: 0 });
     setOpen(true);
   };
 
@@ -56,6 +57,7 @@ export function CategoriesManagement({
     setFormData({
       name: category.name,
       description: category.description || "",
+      value: category.value || 0,
     });
     setOpen(true);
   };
@@ -186,6 +188,16 @@ export function CategoriesManagement({
             value={formData.description}
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, description: e.target.value }))
+            }
+          />
+          <TextField
+            margin="dense"
+            label=" القيمة (بالجرام)"
+            fullWidth
+            type="number"
+            value={formData.value}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, value: parseInt(e.target.value) }))
             }
           />
         </DialogContent>
