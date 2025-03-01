@@ -235,7 +235,6 @@ export default function SalesPage() {
     <div className="space-y-6">
       <PageHeader
         title="إدارة المبيعات"
-        onAdd={handleAdd}
         actions={
           <div className="flex gap-2">
             <Button variant="contained" startIcon={<IconPlus />} onClick={handleAdd}>إضافة فاتورة</Button>

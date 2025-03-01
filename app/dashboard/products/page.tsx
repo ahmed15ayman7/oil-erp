@@ -215,7 +215,6 @@ export default function ProductsPage() {
     <div className="space-y-6">
       <PageHeader
         title="إدارة المنتجات"
-        onAdd={handleAdd}
         actions={
           <div className="flex gap-2">
             <Button
@@ -241,7 +240,6 @@ export default function ProductsPage() {
           </Button>
           </div>
         }
-        addLabel="إضافة منتج"
       />
 
       <Box className="mb-6">
