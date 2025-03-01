@@ -283,22 +283,26 @@ export default function ProductsPage() {
         onDelete={handleDelete}
       />}
 
-      <ProductFormDialog
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        onSubmit={handleFormSubmit}
-        initialData={selectedProduct}
-        loading={formLoading}
-      />
+      {!isLoading && data && (
+        <ProductFormDialog
+          open={formOpen}
+          onClose={() => setFormOpen(false)}
+          onSubmit={handleFormSubmit}
+          initialData={selectedProduct}
+          loading={formLoading}
+        />
+      )}
 
-      <ConfirmDialog
-        open={deleteDialogOpen}
+      {!isLoading && data && (
+        <ConfirmDialog
+          open={deleteDialogOpen}
         title="حذف المنتج"
-        message={`هل أنت متأكد من حذف المنتج "${selectedProduct?.name}"؟`}
-        onConfirm={handleConfirmDelete}
-        onCancel={() => setDeleteDialogOpen(false)}
-        loading={formLoading}
-      />
+          message={`هل أنت متأكد من حذف المنتج "${selectedProduct?.name}"؟`}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleteDialogOpen(false)}
+          loading={formLoading}
+        />
+      )}
     </div>
   );
 }

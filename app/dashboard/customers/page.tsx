@@ -271,28 +271,34 @@ export default function CustomersPage() {
         onDelete={handleDelete}
       />}
 
-      <CustomerFormDialog
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        onSubmit={handleFormSubmit}
-        initialData={selectedCustomer}
-        loading={formLoading}
-      />
+      {isLoading ? <Loading /> : data && (
+        <CustomerFormDialog
+          open={formOpen}
+          onClose={() => setFormOpen(false)}
+          onSubmit={handleFormSubmit}
+          initialData={selectedCustomer}
+          loading={formLoading}
+        />
+      )}
 
-      <ConfirmDialog
-        open={deleteDialogOpen}
+      {isLoading ? <Loading /> : data && (
+        <ConfirmDialog
+          open={deleteDialogOpen}
         title="حذف العميل"
         message={`هل أنت متأكد من حذف العميل "${selectedCustomer?.name}"؟`}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteDialogOpen(false)}
         loading={formLoading}
       />
+      )}
 
-      <ExcelImportDialog
-        open={importDialogOpen}
-        onClose={() => setImportDialogOpen(false)}
-        onSuccess={refetchCustomers}
-      />
+      {isLoading ? <Loading /> : data && (
+        <ExcelImportDialog
+          open={importDialogOpen}
+          onClose={() => setImportDialogOpen(false)}
+          onSuccess={refetchCustomers}
+        />
+      )}
     </div>
   );
 }

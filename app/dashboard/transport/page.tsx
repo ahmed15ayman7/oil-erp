@@ -247,30 +247,36 @@ export default function TransportPage() {
       />
       )}
 
-      <VehicleFormDialog
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        onSubmit={handleFormSubmit}
-        initialData={selectedVehicle}
+      {isLoading ? <Loading /> : data && (
+        <VehicleFormDialog
+          open={formOpen}
+          onClose={() => setFormOpen(false)}
+          onSubmit={handleFormSubmit}
+          initialData={selectedVehicle}
+          loading={formLoading}
+        />
+      )}
+
+      {isLoading ? <Loading /> : data && (
+        <MaintenanceFormDialog
+          open={maintenanceFormOpen}
+          onClose={() => setMaintenanceFormOpen(false)}
+          onSubmit={handleMaintenanceSubmit}
+          vehicle={selectedVehicle}
         loading={formLoading}
       />
+      )}
 
-      <MaintenanceFormDialog
-        open={maintenanceFormOpen}
-        onClose={() => setMaintenanceFormOpen(false)}
-        onSubmit={handleMaintenanceSubmit}
-        vehicle={selectedVehicle}
-        loading={formLoading}
-      />
-
-      <ConfirmDialog
-        open={deleteDialogOpen}
-        title="حذف المركبة"
-        message={`هل أنت متأكد من حذف المركبة رقم "${selectedVehicle?.plateNumber}"؟`}
-        onConfirm={handleConfirmDelete}
+      {isLoading ? <Loading /> : data && (
+        <ConfirmDialog
+          open={deleteDialogOpen}
+          title="حذف المركبة"
+          message={`هل أنت متأكد من حذف المركبة رقم "${selectedVehicle?.plateNumber}"؟`}
+          onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteDialogOpen(false)}
-        loading={formLoading}
-      />
+          loading={formLoading}
+        />
+      )}
     </div>
   );
 }

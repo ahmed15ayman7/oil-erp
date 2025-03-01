@@ -229,41 +229,51 @@ export default function MaterialsPage() {
         ]}
       />}
 
-      <MaterialFormDialog
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        onSubmit={handleFormSubmit}
-        initialData={selectedMaterial}
-      />
+      {!isLoading && data && (
+        <MaterialFormDialog
+          open={formOpen}
+          onClose={() => setFormOpen(false)}
+          onSubmit={handleFormSubmit}
+          initialData={selectedMaterial}
+        />
+      )}
 
-      <StockMovementDialog
-        open={movementDialogOpen}
-        onClose={() => setMovementDialogOpen(false)}
-        product={selectedMaterial}
-        onSuccess={refetchMaterials}
-      />
+      {!isLoading && data && (
+        <StockMovementDialog
+          open={movementDialogOpen}
+          onClose={() => setMovementDialogOpen(false)}
+          product={selectedMaterial}
+          onSuccess={refetchMaterials}
+        />
+      )}
 
-      <ConfirmDialog
-        open={deleteDialogOpen}
-        title="حذف المادة"
-        message={`هل أنت متأكد من حذف المادة "${selectedMaterial?.name}"؟`}
-        onConfirm={handleConfirmDelete}
-        onCancel={() => setDeleteDialogOpen(false)}
-        loading={formLoading}
-      />
+      {!isLoading && data && (
+        <ConfirmDialog
+          open={deleteDialogOpen}
+          title="حذف المادة"
+          message={`هل أنت متأكد من حذف المادة "${selectedMaterial?.name}"؟`}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleteDialogOpen(false)}
+          loading={formLoading}
+        />
+      )}
 
-      <ImportDialog
-        open={importDialogOpen}
-        onClose={() => setImportDialogOpen(false)}
-        onSuccess={refetchMaterials}
-      />
+      {!isLoading && data && (
+        <ImportDialog
+          open={importDialogOpen}
+          onClose={() => setImportDialogOpen(false)}
+          onSuccess={refetchMaterials}
+        />
+      )}
 
-      <ProductConversionDialog
-        open={conversionDialogOpen}
-        onClose={() => setConversionDialogOpen(false)}
-        material={selectedMaterial}
-        onSuccess={refetchMaterials}
-      />
+      {!isLoading && data && (
+          <ProductConversionDialog
+          open={conversionDialogOpen}
+          onClose={() => setConversionDialogOpen(false)}
+          material={selectedMaterial}
+          onSuccess={refetchMaterials}
+        />
+      )}
     </div>
   );
 } 

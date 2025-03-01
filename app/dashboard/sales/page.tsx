@@ -272,22 +272,26 @@ export default function SalesPage() {
         />
       )}
 
-      <SaleFormDialog
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        onSubmit={handleFormSubmit}
-        initialData={selectedSale}
-        loading={formLoading}
-      />
+      {!isLoading && data && (
+        <SaleFormDialog
+          open={formOpen}
+          onClose={() => setFormOpen(false)}
+          onSubmit={handleFormSubmit}
+          initialData={selectedSale}
+          loading={formLoading}
+        />
+      )}
 
-      <ConfirmDialog
-        open={deleteDialogOpen}
+      {!isLoading && data && (
+        <ConfirmDialog
+          open={deleteDialogOpen}
         title="حذف الفاتورة"
-        message={`هل أنت متأكد من حذف الفاتورة رقم "${selectedSale?.id}"؟`}
-        onConfirm={handleConfirmDelete}
-        onCancel={() => setDeleteDialogOpen(false)}
-        loading={formLoading}
-      />
+          message={`هل أنت متأكد من حذف الفاتورة رقم "${selectedSale?.id}"؟`}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleteDialogOpen(false)}
+          loading={formLoading}
+        />
+      )}
     </div>
   );
 }

@@ -240,18 +240,22 @@ export default function InventoryPage() {
         ]}
       />}
 
-      <StockMovementDialog
-        open={movementDialogOpen}
-        onClose={() => setMovementDialogOpen(false)}
-        product={selectedProduct}
-        onSuccess={refetchProducts}
-      />
+      {isLoading ? <Loading /> : data && (
+        <StockMovementDialog
+          open={movementDialogOpen}
+          onClose={() => setMovementDialogOpen(false)}
+          product={selectedProduct}
+          onSuccess={refetchProducts}
+        />
+      )}
 
-      <ExcelImportDialog
-        open={importDialogOpen}
-        onClose={() => setImportDialogOpen(false)}
-        onSuccess={refetchProducts}
-      />
+      {isLoading ? <Loading /> : data && (
+          <ExcelImportDialog
+          open={importDialogOpen}
+          onClose={() => setImportDialogOpen(false)}
+          onSuccess={refetchProducts}
+        />
+      )}
     </div>
   );
 }

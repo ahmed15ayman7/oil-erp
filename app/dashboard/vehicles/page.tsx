@@ -224,19 +224,23 @@ export default function VehiclesPage() {
       />
       )}
 
-      <VehicleDialog
-        open={vehicleDialogOpen}
-        onClose={() => setVehicleDialogOpen(false)}
-        vehicle={selectedVehicle}
-        onSuccess={refetchVehicles}
-      />
+      {!isLoading && data && (
+        <VehicleDialog
+          open={vehicleDialogOpen}
+          onClose={() => setVehicleDialogOpen(false)}
+          vehicle={selectedVehicle}
+          onSuccess={refetchVehicles}
+        />
+      )}
 
-      <ExpenseDialog
-        open={expenseDialogOpen}
-        onClose={() => setExpenseDialogOpen(false)}
-        vehicle={selectedVehicle}
-        onSuccess={refetchVehicles}
-      />
+      {!isLoading && data && (
+        <ExpenseDialog
+          open={expenseDialogOpen}
+          onClose={() => setExpenseDialogOpen(false)}
+          vehicle={selectedVehicle}
+          onSuccess={refetchVehicles}
+        />
+      )}
     </div>
   );
 }

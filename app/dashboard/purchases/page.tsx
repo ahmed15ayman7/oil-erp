@@ -193,22 +193,26 @@ export default function PurchasesPage() {
         onDelete={handleDelete}
       />}
 
-      <PurchaseFormDialog
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        onSubmit={handleFormSubmit}
-        initialData={selectedPurchase}
-        loading={formLoading}
-      />
+      {!isLoading && data && (
+        <PurchaseFormDialog
+          open={formOpen}
+          onClose={() => setFormOpen(false)}
+          onSubmit={handleFormSubmit}
+          initialData={selectedPurchase}
+          loading={formLoading}
+        />
+      )}
 
-      <ConfirmDialog
-        open={deleteDialogOpen}
+      {!isLoading && data && (
+        <ConfirmDialog
+          open={deleteDialogOpen}
         title="حذف المشتريات"
         message={`هل أنت متأكد من حذف فاتورة المشتريات رقم "${selectedPurchase?.invoiceNumber}"؟`}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteDialogOpen(false)}
         loading={formLoading}
       />
+      )}
     </div>
   );
 }

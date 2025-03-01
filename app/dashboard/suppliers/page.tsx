@@ -173,22 +173,26 @@ export default function SuppliersPage() {
         />
       )}
 
-      <SupplierFormDialog
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        onSubmit={handleFormSubmit}
-        initialData={selectedSupplier}
-        loading={formLoading}
-      />
+      {isLoading ? <Loading /> : data && (
+        <SupplierFormDialog
+          open={formOpen}
+          onClose={() => setFormOpen(false)}
+          onSubmit={handleFormSubmit}
+          initialData={selectedSupplier}
+          loading={formLoading}
+        />
+      )}
 
-      <ConfirmDialog
-        open={deleteDialogOpen}
+      {isLoading ? <Loading /> : data && (
+        <ConfirmDialog
+          open={deleteDialogOpen}
         title="حذف المورد"
         message={`هل أنت متأكد من حذف المورد "${selectedSupplier?.name}"؟`}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteDialogOpen(false)}
         loading={formLoading}
       />
+      )}
     </div>
   );
 }

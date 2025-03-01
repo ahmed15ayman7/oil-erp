@@ -160,12 +160,14 @@ export default function WarehousesPage() {
         ]}
       />
       )}
+      {!isLoading && data && (
       <WarehouseFormDialog
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSubmit={handleFormSubmit}
         initialData={selectedWarehouse}
       />
+      )}
     </div>
   );
 } 
