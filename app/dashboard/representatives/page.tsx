@@ -80,6 +80,7 @@ export default function RepresentativesPage() {
 
   const handleExportExcel = () => {
     // Implementation of export to Excel
+    
   };
 
   const handlePrint = () => {
@@ -117,7 +118,7 @@ export default function RepresentativesPage() {
         />
       </Box>
 
-      <DataTable
+      {isLoading ? <Loading /> : data && <DataTable
         columns={columns}
         data={data?.representatives || []}
         loading={isLoading}
@@ -126,7 +127,7 @@ export default function RepresentativesPage() {
         rowsPerPage={rowsPerPage}
         onPageChange={setPage}
         onRowsPerPageChange={setRowsPerPage}
-      />
+      />}
     </div>
   );
 }

@@ -216,9 +216,7 @@ export default function CustomersPage() {
     }
   };
 
-  if (isLoading) {
-    return <Loading />;
-  }
+
 
   return (
     <div className="space-y-6">
@@ -260,7 +258,7 @@ export default function CustomersPage() {
         />
       </Box>
 
-      <DataTable
+      {isLoading ? <Loading /> : data && <DataTable
         columns={columns}
         data={data?.customers || []}
         loading={isLoading}
@@ -271,7 +269,7 @@ export default function CustomersPage() {
         onRowsPerPageChange={setRowsPerPage}
         onEdit={handleEdit}
         onDelete={handleDelete}
-      />
+      />}
 
       <CustomerFormDialog
         open={formOpen}

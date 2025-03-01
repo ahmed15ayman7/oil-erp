@@ -101,9 +101,6 @@ export default function WarehousesPage() {
     }
   };
 
-  if (isLoading) {
-    return <Loading />;
-  }
 
   return (
     <div className="space-y-4 p-8">
@@ -136,13 +133,16 @@ export default function WarehousesPage() {
         />
       </Box>
 
-      <DataTable
-        columns={columns}
-        data={data?.warehouses || []}
-        totalCount={data?.totalRows || 0}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        onPageChange={setPage}
+      {isLoading ? (
+        <Loading />
+      ) : (
+        <DataTable
+          columns={columns}
+          data={data?.warehouses || []}
+          totalCount={data?.totalRows || 0}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={setPage}
         onRowsPerPageChange={setRowsPerPage}
         onEdit={handleEdit}
         onDelete={handleDelete}
@@ -159,6 +159,7 @@ export default function WarehousesPage() {
           },
         ]}
       />
+      )}
       <WarehouseFormDialog
         open={formOpen}
         onClose={() => setFormOpen(false)}

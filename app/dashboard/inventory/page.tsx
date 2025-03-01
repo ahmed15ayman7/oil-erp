@@ -163,9 +163,6 @@ export default function InventoryPage() {
     }
   };
 
-  if (isLoading) {
-    return <Loading />;
-  }
 
   return (
     <div className="space-y-6">
@@ -210,22 +207,6 @@ export default function InventoryPage() {
             <TextField
               select
               fullWidth
-              label="النوع"
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-            >
-              <MenuItem value="">الكل</MenuItem>
-              <MenuItem value="RAW_MATERIAL">مواد خام</MenuItem>
-              <MenuItem value="FINISHED_PRODUCT">منتج نهائي</MenuItem>
-              <MenuItem value="PACKAGING">مواد تغليف</MenuItem>
-              <MenuItem value="BOTTLE">زجاجات</MenuItem>
-              <MenuItem value="CARTON">كراتين</MenuItem>
-            </TextField>
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <TextField
-              select
-              fullWidth
               label="الفئة"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
@@ -241,7 +222,7 @@ export default function InventoryPage() {
         </Grid>
       </Box>
 
-      <DataTable
+      {isLoading ? <Loading /> : data && <DataTable
         columns={columns}
         data={data?.products || []}
         loading={isLoading}
@@ -257,7 +238,7 @@ export default function InventoryPage() {
             onClick: handleMovement,
           },
         ]}
-      />
+      />}
 
       <StockMovementDialog
         open={movementDialogOpen}

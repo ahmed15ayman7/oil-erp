@@ -80,7 +80,7 @@ export function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
           </ListItem>
           <ListItem>
             <ListItemText 
-              primary="النوع (مواد خام، مواد تعبئة، زجاجات، كراتين)"
+              primary="النوع (مواد خام، مواد تعبئة، زجاجات، كراتين، غطاء الزجاجة، سليف، لزق)"
             />
           </ListItem>
           <ListItem>

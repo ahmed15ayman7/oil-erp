@@ -86,6 +86,9 @@ export function MaterialFormDialog({
                 <MenuItem value="PACKAGING">مواد تعبئة</MenuItem>
                 <MenuItem value="BOTTLE">زجاجات</MenuItem>
                 <MenuItem value="CARTON">كراتين</MenuItem>
+                <MenuItem value="BOTTLE_CAP">غطاء الزجاجة</MenuItem>
+                <MenuItem value="SLEEVE">سليف</MenuItem>
+                <MenuItem value="TAPE">لزق</MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>

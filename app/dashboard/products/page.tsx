@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DataTable } from '@/components/data-table';
 import { PageHeader } from '@/components/page-header';
@@ -8,8 +8,12 @@ import { Loading } from '@/components/loading';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { ProductFormDialog } from '@/components/products/product-form-dialog';
 import { SearchInput } from '@/components/search-input';
-import { Box, Chip, Grid, MenuItem, TextField } from '@mui/material';
+import { Box, Chip, Grid, MenuItem, TextField, Button, Paper, Stack } from '@mui/material';
 import { useApi } from '@/hooks/use-api';
+import { IconFileSpreadsheet, IconPrinter } from "@tabler/icons-react";
+import * as ExcelJS from "exceljs";
+import { generateProductsReport } from "@/lib/pdf";
+import { Product } from '@prisma/client';
 
 const columns = [
   {
@@ -82,6 +86,7 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const api = useApi();
+  const [products, setProducts] = useState([]);
 
   // Fetch products
   const {
@@ -103,6 +108,57 @@ export default function ProductsPage() {
     queryKey: ['categories'],
     queryFn: () => api.get('/api/categories'),
   });
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    const response = await fetch("/api/products");
+    const data = await response.json();
+    setProducts(data);
+  };
+
+  const exportToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("المنتجات");
+
+    // تعيين اتجاه الورقة من اليمين إلى اليسار
+    worksheet.views = [{ rightToLeft: true }];
+
+    // تعريف الأعمدة
+    worksheet.columns = [
+      { header: "اسم المنتج", key: "name", width: 30 },
+      { header: "السعر", key: "price", width: 15 },
+      { header: "الكمية المتاحة", key: "quantity", width: 15 },
+    ];
+
+    // إضافة البيانات
+    products.forEach((product: Product) => {
+      worksheet.addRow({
+        name: product.name,
+        price: product.price,
+        quantity: product.quantity,
+      });
+    });
+
+    // تنسيق الخلايا
+    worksheet.getRow(1).font = { bold: true, size: 14 };
+
+    // تصدير الملف
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "المنتجات.xlsx";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const printPDF = async () => {
+    await generateProductsReport(products);
+  };
 
   const handleAdd = () => {
     setSelectedProduct(null);
@@ -154,9 +210,6 @@ export default function ProductsPage() {
     }
   };
 
-  if (isLoading) {
-    return <Loading />;
-  }
 
   return (
     <div className="space-y-6">
@@ -193,7 +246,26 @@ export default function ProductsPage() {
         </Grid>
       </Box>
 
-      <DataTable
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Stack direction="row" spacing={2}>
+          <Button
+            variant="contained"
+            startIcon={<IconFileSpreadsheet />}
+            onClick={exportToExcel}
+          >
+            تصدير Excel
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<IconPrinter />}
+            onClick={printPDF}
+          >
+            طباعة PDF
+          </Button>
+        </Stack>
+      </Paper>
+
+      {isLoading ? <Loading /> : data && <DataTable
         columns={columns}
         data={data?.products || []}
         loading={isLoading}
@@ -204,7 +276,7 @@ export default function ProductsPage() {
         onRowsPerPageChange={setRowsPerPage}
         onEdit={handleEdit}
         onDelete={handleDelete}
-      />
+      />}
 
       <ProductFormDialog
         open={formOpen}

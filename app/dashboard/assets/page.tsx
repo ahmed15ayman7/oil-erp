@@ -95,6 +95,7 @@ export default function AssetsPage() {
     try {
       const response = await api.get("/api/assets/export");
       // تنفيذ تصدير Excel
+
     } catch (error) {
       console.error("Error exporting data:", error);
     }
@@ -111,12 +112,20 @@ export default function AssetsPage() {
 
   const handleEdit = (asset: any) => {
     setSelectedAsset(asset);
+    refetchAssets();
     setFormOpen(true);
   };
 
   const handleDelete = (asset: any) => {
     setSelectedAsset(asset);
+    refetchAssets();
     setDeleteDialogOpen(true);
+  };
+
+  const handleFormSubmit = (asset: any) => {
+    setSelectedAsset(asset);
+    refetchAssets();
+    setFormOpen(false);
   };
 
   return (
@@ -150,7 +159,7 @@ export default function AssetsPage() {
         />
       </Box>
 
-      <DataTable
+     {isLoading ? <Loading /> : data && <DataTable
         columns={columns}
         data={data?.assets || []}
         loading={isLoading}
@@ -161,9 +170,24 @@ export default function AssetsPage() {
         onRowsPerPageChange={setRowsPerPage}
         onEdit={handleEdit}
         onDelete={handleDelete}
-      />
+      />}
 
       {/* ... dialogs ... */}
+      <AssetFormDialog
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        onSubmit={() => handleFormSubmit(selectedAsset)}
+        loading={formLoading}
+      />
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onConfirm={() => handleDelete(selectedAsset)}
+        title="حذف الأصل"
+        message="هل أنت متأكد من رغبتك في حذف هذا الأصل؟"
+        onCancel={() => setDeleteDialogOpen(false)}
+      />
+
+      
     </div>
   );
 }

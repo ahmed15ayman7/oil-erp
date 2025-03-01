@@ -23,7 +23,10 @@ const TYPE_MAPPING = {
   'مواد خام': 'RAW_MATERIAL',
   'مواد تعبئة': 'PACKAGING',
   'زجاجات': 'BOTTLE',
-  'كراتين': 'CARTON'
+  'كراتين': 'CARTON',
+  'غطاء الزجاجة': 'BOTTLE_CAP',
+  'سليف': 'SLEEVE',
+  'لزق': 'TAPE'
 };
 
 const UNIT_MAPPING = {

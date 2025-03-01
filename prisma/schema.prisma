@@ -458,10 +458,13 @@ model WarehouseItem {
 }
 
 enum MaterialType {
-  RAW_MATERIAL    // مواد خام
-  PACKAGING       // مواد تعبئة
-  BOTTLE          // زجاجات
-  CARTON          // كراتين
+  RAW_MATERIAL      // المواد خام
+  PACKAGING         // مواد تعبئة
+  BOTTLE            // الزجاجات
+  CARTON            // الكراتين
+  BOTTLE_CAP        // غطاء الزجاجة
+  SLEEVE            // الأكمام
+  TAPE              // الشريط
 }
 
 enum UnitType {

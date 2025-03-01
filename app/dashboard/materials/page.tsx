@@ -44,6 +44,9 @@ const columns: Column[] = [
         PACKAGING: { label: 'مواد تعبئة', color: 'secondary' },
         BOTTLE: { label: 'زجاجات', color: 'success' },
         CARTON: { label: 'كراتين', color: 'info' },
+        BOTTLE_CAP: { label: 'غطاء الزجاجة', color: 'warning' },
+        SLEEVE: { label: 'سليف', color: 'error' },
+        TAPE: { label: 'لزق', color: 'default' }
       };
       const type = typeMap[value as keyof typeof typeMap];
       return <Chip label={type.label} color={type.color as any} size="small" />;
@@ -162,9 +165,6 @@ export default function MaterialsPage() {
     }
   };
 
-  if (isLoading) {
-    return <Loading />;
-  }
 
   return (
     <div className="space-y-6 p-8">
@@ -197,7 +197,7 @@ export default function MaterialsPage() {
         />
       </Box>
 
-      <DataTable
+      {isLoading ? <Loading /> : data && <DataTable
         columns={columns}
         data={data?.materials || []}
         totalCount={data?.totalRows || 0}
@@ -214,7 +214,7 @@ export default function MaterialsPage() {
             onClick: handleMovement,
           },
         ]}
-      />
+      />}
 
       <MaterialFormDialog
         open={formOpen}

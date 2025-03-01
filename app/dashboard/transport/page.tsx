@@ -192,9 +192,7 @@ export default function TransportPage() {
     }
   };
 
-  if (isLoading) {
-    return <Loading />;
-  }
+
 
   return (
     <div className="space-y-6">
@@ -225,13 +223,16 @@ export default function TransportPage() {
         </Grid>
       </Box>
 
-      <DataTable
-        columns={columns}
-        data={data?.vehicles || []}
-        loading={isLoading}
-        page={page}
-        totalCount={data?.total || 0}
-        rowsPerPage={rowsPerPage}
+      {isLoading ? (
+        <Loading />
+      ) : (
+        <DataTable
+          columns={columns}
+          data={data?.vehicles || []}
+          loading={isLoading}
+          page={page}
+          totalCount={data?.total || 0}
+          rowsPerPage={rowsPerPage}
         onPageChange={setPage}
         onRowsPerPageChange={setRowsPerPage}
         onEdit={handleEdit}
@@ -244,6 +245,7 @@ export default function TransportPage() {
           },
         ]}
       />
+      )}
 
       <VehicleFormDialog
         open={formOpen}
