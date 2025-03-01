@@ -225,7 +225,7 @@ export default function TransportPage() {
 
       {isLoading ? (
         <Loading />
-      ) : (
+      ) : data && (
         <DataTable
           columns={columns}
           data={data?.vehicles || []}

@@ -135,7 +135,7 @@ export default function WarehousesPage() {
 
       {isLoading ? (
         <Loading />
-      ) : (
+      ) : data && (
         <DataTable
           columns={columns}
           data={data?.warehouses || []}

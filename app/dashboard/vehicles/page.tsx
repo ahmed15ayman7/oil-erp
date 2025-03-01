@@ -203,7 +203,7 @@ export default function VehiclesPage() {
 
       {isLoading ? (
         <Loading />
-      ) : (
+      ) : data && (
         <DataTable
           columns={columns}
           data={data?.vehicles || []}

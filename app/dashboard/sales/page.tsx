@@ -258,7 +258,7 @@ export default function SalesPage() {
 
       {isLoading ? (
         <Loading />
-      ) : (
+      ) : data && (
         <DataTable
           columns={columns}
           data={data?.sales || []}

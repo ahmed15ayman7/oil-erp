@@ -158,7 +158,7 @@ export default function SuppliersPage() {
 
       {isLoading ? (
         <Loading />
-      ) : (
+      ) : data && (
         <DataTable
           columns={columns}
           data={data?.suppliers || []}
