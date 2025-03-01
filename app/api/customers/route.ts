@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
           OR: [
             { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
             { phone: { contains: search } },
-            { email: { contains: search, mode: Prisma.QueryMode.insensitive } },
           ],
         }
       : {};
