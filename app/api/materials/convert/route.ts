@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     // Convert tons to kilograms
     const quantityInKg = quantity * 1000;
     // Calculate bottles based on product weight (e.g., 900g)
-    const bottleWeight = ((product.category.value  || 900) -62.5) / 1000 ;
+    const bottleWeight = ((product.category.value  || 900) -25) / 1000 ;
     // 900g in kg
     const totalBottles = Math.floor(quantityInKg / bottleWeight);
     // Calculate cartons (12 bottles per carton)
