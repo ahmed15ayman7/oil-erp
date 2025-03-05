@@ -97,7 +97,7 @@ export function ProductConversionDialog({
                 value={selectedProduct}
                 onChange={(e) => setSelectedProduct(e.target.value)}
               >
-                {products?.map((product: any) => (
+                {products && products?.products?.map((product: any) => (
                   <MenuItem key={product.id} value={product.id}>
                     {product.name}
                   </MenuItem>
@@ -112,7 +112,10 @@ export function ProductConversionDialog({
               label="الكمية بالطن"
               type="number"
               value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value))}
+              onChange={(e) => {
+                setQuantity(Number(e.target.value));
+                setConversionResult(null);
+              }}
               InputProps={{
                 inputProps: { min: 0, step: 0.05 }
               }}
@@ -134,7 +137,12 @@ export function ProductConversionDialog({
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>إلغاء</Button>
+        <Button onClick={() => {
+          setConversionResult(null);
+          setSelectedProduct('');
+          setQuantity(0);
+          onClose();
+        }}>إلغاء</Button>
         {!conversionResult ? (
           <Button 
             onClick={handleConvert}

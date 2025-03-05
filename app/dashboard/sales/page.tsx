@@ -33,7 +33,7 @@ const columns = [
   {
     id: 'items',
     label: 'الفئات',
-    format: (value: any[]) => value.map(item => item.product.category.name).join(', ')
+    format: (value: any[]) => value.map(item => item.product.category?.name).join(', ')
   },
   {
     id: 'items',

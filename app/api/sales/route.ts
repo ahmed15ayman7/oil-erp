@@ -39,7 +39,11 @@ export async function GET(request: NextRequest) {
           customer: true,
           items: {
             include: {
-              product: true,
+              product: {
+                include: {
+                  category: true,
+                },
+              },
             },
           },
           user: {
