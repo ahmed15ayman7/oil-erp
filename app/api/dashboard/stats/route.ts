@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/auth';
-import { addDays, startOfDay, endOfDay, subDays, format } from 'date-fns';
+import { addDays, startOfDay, endOfDay, subDays, format, subMonths, subYears } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 // دالة مساعدة للحصول على نطاق التاريخ
@@ -9,29 +9,43 @@ function getDateRange(range: string, date: string) {
   const currentDate = new Date(date);
   let startDate = startOfDay(currentDate);
   let endDate = endOfDay(currentDate);
+  let previousStartDate;
+  let previousEndDate;
 
   switch (range) {
     case 'week':
       startDate = subDays(startDate, 6);
+      previousStartDate = subDays(startDate, 7);
+      previousEndDate = subDays(startDate, 1);
       break;
     case 'month':
       startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      previousStartDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+      previousEndDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
       break;
     case 'year':
       startDate = new Date(currentDate.getFullYear(), 0, 1);
       endDate = new Date(currentDate.getFullYear(), 11, 31);
+      previousStartDate = new Date(currentDate.getFullYear() - 1, 0, 1);
+      previousEndDate = new Date(currentDate.getFullYear() - 1, 11, 31);
       break;
   }
 
-  return { startDate, endDate };
+  return { startDate, endDate, previousStartDate, previousEndDate };
+}
+
+// دالة لحساب نسبة النمو
+function calculateGrowth(current: number, previous: number): number {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return ((current - previous) / previous) * 100;
 }
 
 // دالة لإرسال إشعار WhatsApp
 async function sendWhatsAppNotification(product: any) {
-  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const recipientNumber = process.env.WHATSAPP_TO_PHONE_NUMBER;
+  const accessToken = process.env.META_ACCESS_TOKEN;
+  const phoneNumberId = process.env.META_PHONE_NUMBER_ID;
+  const recipientNumber = process.env.ADMIN_WHATSAPP_NUMBER;
 
   if (!accessToken || !phoneNumberId || !recipientNumber) {
     console.error('WhatsApp credentials not configured');
@@ -100,7 +114,7 @@ export async function GET(request: Request) {
     const range = searchParams.get('range') || 'week';
     const date = searchParams.get('date') || new Date().toISOString();
 
-    const { startDate, endDate } = getDateRange(range, date);
+    const { startDate, endDate, previousStartDate, previousEndDate } = getDateRange(range, date);
 
     const [
       // الإحصائيات الأساسية
@@ -117,6 +131,8 @@ export async function GET(request: Request) {
       // إحصائيات المبيعات والإنتاج
       productionHistory,
       salesHistory,
+      currentSales,
+      previousSales,
 
       // إحصائيات المخزون والموارد
       lowStockProducts,
@@ -173,6 +189,35 @@ export async function GET(request: Request) {
         _sum: {
           total: true,
         },
+        _count: true,
+      }),
+
+      // المبيعات الحالية
+      prisma.sale.aggregate({
+        where: {
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        _sum: {
+          total: true,
+        },
+        _count: true,
+      }),
+
+      // المبيعات السابقة
+      prisma.sale.aggregate({
+        where: {
+          date: {
+            gte: previousStartDate,
+            lte: previousEndDate,
+          },
+        },
+        _sum: {
+          total: true,
+        },
+        _count: true,
       }),
 
       // المنتجات منخفضة المخزون
@@ -219,6 +264,15 @@ export async function GET(request: Request) {
         _count: true,
       })
     ]);
+
+    // حساب نمو المبيعات والطلبات
+    const currentRevenue = currentSales._sum.total || 0;
+    const previousRevenue = previousSales._sum.total || 0;
+    const currentOrders = currentSales._count || 0;
+    const previousOrders = previousSales._count || 0;
+
+    const revenueGrowth = calculateGrowth(currentRevenue, previousRevenue);
+    const ordersGrowth = calculateGrowth(currentOrders, previousOrders);
 
     // إرسال إشعارات WhatsApp للمنتجات منخفضة المخزون
     for (const product of lowStockProducts) {
@@ -269,9 +323,19 @@ export async function GET(request: Request) {
       },
       sales: {
         today: todaySales._sum.total || 0,
+        totalRevenue: currentRevenue,
+        totalOrders: currentOrders,
+        growth: {
+          revenue: revenueGrowth,
+          orders: ordersGrowth,
+        },
         history: salesHistory.map((record) => ({
           date: format(record.date, 'yyyy-MM-dd', { locale: ar }),
-          total: record._sum.total || 0,
+          revenue: record._sum.total || 0,
+          orders: record._count || 0,
+          averageOrderValue: record._sum.total && record._count
+            ? record._sum.total / record._count
+            : 0,
         })),
       },
       treasury: treasury._sum.amount || 0,
