@@ -15,7 +15,24 @@ import { UnitsManagement } from "@/components/dashboard/units-management";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { DateRange } from "@/components/dashboard/date-range-selector";
+import { IconPackage, IconReportMoney, IconUsers } from "@tabler/icons-react";
+import { StatsCard } from "@/components/stats-card";
 
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 },
+
+};
 export default function DashboardPage() {
   const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState<DateRange>("week");
@@ -74,7 +91,30 @@ export default function DashboardPage() {
   }
 
   const isLoading = statsLoading || categoriesLoading || unitsLoading;
-  console.log("data", stats)
+  const statCards = [
+    {
+      title: "رصيد الخزنة",
+      value: !isLoading ? stats.treasury.toLocaleString("ar-EG", {
+        style: "currency",
+        currency: "EGP",
+      }) : "0",
+      icon: <IconReportMoney className="w-8 h-8" />,
+      color: "warning.main",
+    },
+    {
+      title: "العملاء",
+      value: !isLoading ? stats.counts.customers.toLocaleString() : "0",
+      icon: <IconUsers className="w-8 h-8" />,
+      color: "secondary.main",
+    },
+    {
+      title: "المنتجات",
+      value: !isLoading ? stats.counts.products.toLocaleString() : "0",
+      icon: <IconPackage className="w-8 h-8" />,
+      color: "error.main",
+    },
+  ];
+
   return (
     <AnimatePresence>
       <motion.div
@@ -92,6 +132,25 @@ export default function DashboardPage() {
             <DashboardStats stats={stats} />
 
             <Grid container spacing={3}>
+
+              <Grid item xs={12} md={4}>
+                <motion.div
+                  variants={container}
+                  initial="hidden"
+                  animate="show"
+                  className="mb-6"
+                >
+                  <Grid container direction="column" spacing={3}>
+                    {statCards.map((card, index) => (
+                      <Grid item xs={12} sm={6} md={4} lg={4} key={card.title}>
+                        <motion.div variants={item}>
+                          <StatsCard {...card} />
+                        </motion.div>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </motion.div>
+              </Grid>
               <Grid item xs={12} md={8}>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -105,7 +164,7 @@ export default function DashboardPage() {
                 </motion.div>
               </Grid>
 
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12} md={12}>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}

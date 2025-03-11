@@ -53,6 +53,7 @@ async function sendWhatsAppNotification(product: any) {
   }
 
   try {
+    console.log("sending")
     const response = await fetch(
       `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
       {

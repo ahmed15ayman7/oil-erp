@@ -6,9 +6,6 @@ import {
   IconBox,
   IconTruck,
   IconCoin,
-  IconReportMoney,
-  IconUsers,
-  IconPackage,
 } from "@tabler/icons-react";
 import { StatsCard } from "@/components/stats-card";
 
@@ -81,27 +78,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       color: "info.main",
       trend: "up" as const,
     },
-    {
-      title: "رصيد الخزنة",
-      value: stats.treasury.toLocaleString("ar-EG", {
-        style: "currency",
-        currency: "EGP",
-      }),
-      icon: <IconReportMoney className="w-8 h-8" />,
-      color: "warning.main",
-    },
-    {
-      title: "العملاء",
-      value: stats.counts.customers.toLocaleString(),
-      icon: <IconUsers className="w-8 h-8" />,
-      color: "secondary.main",
-    },
-    {
-      title: "المنتجات",
-      value: stats.counts.products.toLocaleString(),
-      icon: <IconPackage className="w-8 h-8" />,
-      color: "error.main",
-    },
+
   ];
 
   return (
@@ -113,7 +90,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
     >
       <Grid container spacing={3}>
         {statCards.map((card, index) => (
-          <Grid item xs={12} sm={6} md={4} lg={2} key={card.title}>
+          <Grid item xs={12} sm={6} md={4} lg={4} key={card.title}>
             <motion.div variants={item}>
               <StatsCard {...card} />
             </motion.div>
