@@ -175,7 +175,7 @@ export function CategoriesManagement({
   };
 
   return (
-    <>
+    <div>
       <Card
         component={motion.div}
         initial={{ opacity: 0, y: 20 }}
@@ -345,6 +345,6 @@ export function CategoriesManagement({
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </div>
   );
 }

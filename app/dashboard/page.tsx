@@ -1,9 +1,8 @@
 "use client";
-
+import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Grid } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTheme } from "@mui/material/styles";
 import { PageHeader } from "@/components/page-header";
 import { DashboardStats } from "@/components/dashboard/stats";
 import { ProductionChart } from "@/components/dashboard/charts/production-chart";
@@ -18,8 +17,7 @@ import { LoadingOverlay } from "@/components/loading-overlay";
 
 export default function DashboardPage() {
   const queryClient = useQueryClient();
-  const theme = useTheme();
-  
+
   // استخدام React Query لجلب البيانات
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ["dashboardStats"],
@@ -41,7 +39,7 @@ export default function DashboardPage() {
 
   // إعداد WebSocket للتحديثات المباشرة
   useWebSocket({
-    url: process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001",
+    url: process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3000/api/websocket",
     onMessage: (data: string) => {
       const parsedData = JSON.parse(data);
       if (parsedData.type === 'stats') {
@@ -66,7 +64,7 @@ export default function DashboardPage() {
   }
 
   const isLoading = statsLoading || categoriesLoading || unitsLoading;
-
+  console.log("data", stats);
   return (
     <AnimatePresence>
       <motion.div
@@ -93,7 +91,7 @@ export default function DashboardPage() {
                   <ProductionChart data={stats.production} />
                 </motion.div>
               </Grid>
-              
+
               <Grid item xs={12} md={4}>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -110,7 +108,7 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.4 }}
                 >
-                  <InventoryStatus data={stats.inventory} />
+                  <InventoryStatus data={{ ...stats.inventory, lowStockProducts: stats.analytics.lowStockProducts }} />
                 </motion.div>
               </Grid>
 
