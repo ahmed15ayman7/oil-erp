@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Grid } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,14 +14,19 @@ import { CategoriesManagement } from "@/components/dashboard/categories-manageme
 import { UnitsManagement } from "@/components/dashboard/units-management";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { LoadingOverlay } from "@/components/loading-overlay";
+import { DateRange } from "@/components/dashboard/date-range-selector";
 
 export default function DashboardPage() {
   const queryClient = useQueryClient();
+  const [dateRange, setDateRange] = useState<DateRange>("week");
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   // استخدام React Query لجلب البيانات
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
-    queryKey: ["dashboardStats"],
-    queryFn: () => fetch("/api/dashboard/stats").then((res) => res.json()),
+    queryKey: ["dashboardStats", dateRange, currentDate],
+    queryFn: () => 
+      fetch(`/api/dashboard/stats?range=${dateRange}&date=${currentDate.toISOString()}`)
+        .then((res) => res.json()),
     refetchInterval: 30000, // تحديث كل 30 ثانية
   });
 
@@ -43,7 +48,7 @@ export default function DashboardPage() {
     onMessage: (data: string) => {
       const parsedData = JSON.parse(data);
       if (parsedData.type === 'stats') {
-        queryClient.setQueryData(["dashboardStats"], (oldData: any) => ({
+        queryClient.setQueryData(["dashboardStats", dateRange, currentDate], (oldData: any) => ({
           ...oldData,
           ...parsedData.data,
         }));
@@ -55,6 +60,11 @@ export default function DashboardPage() {
     },
   });
 
+  const handleDateRangeChange = (range: DateRange, date: Date) => {
+    setDateRange(range);
+    setCurrentDate(date);
+  };
+
   if (statsError) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -64,7 +74,7 @@ export default function DashboardPage() {
   }
 
   const isLoading = statsLoading || categoriesLoading || unitsLoading;
-  console.log("data", stats);
+
   return (
     <AnimatePresence>
       <motion.div
@@ -88,7 +98,10 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <ProductionChart data={stats.production} />
+                  <ProductionChart 
+                    data={stats.production} 
+                    onDateRangeChange={handleDateRangeChange}
+                  />
                 </motion.div>
               </Grid>
 
@@ -98,7 +111,10 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.3 }}
                 >
-                  <SalesAnalytics data={stats.sales} />
+                  <SalesAnalytics 
+                    data={stats.sales} 
+                    onDateRangeChange={handleDateRangeChange}
+                  />
                 </motion.div>
               </Grid>
 
@@ -108,7 +124,10 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.4 }}
                 >
-                  <InventoryStatus data={{ ...stats.inventory, lowStockProducts: stats.analytics.lowStockProducts }} />
+                  <InventoryStatus 
+                    data={{ ...stats.inventory, lowStockProducts: stats.analytics.lowStockProducts }}
+                    onDateRangeChange={handleDateRangeChange}
+                  />
                 </motion.div>
               </Grid>
 

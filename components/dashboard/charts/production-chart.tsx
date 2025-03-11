@@ -5,9 +5,8 @@ import {
   Card,
   CardContent,
   CardHeader,
-  ToggleButton,
-  ToggleButtonGroup,
-  useTheme,
+  Box,
+  Typography,
 } from '@mui/material';
 import {
   AreaChart,
@@ -18,46 +17,43 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useTheme } from '@mui/material/styles';
+import { DateRangeSelector, DateRange } from '../date-range-selector';
 
 interface ProductionChartProps {
   data: {
-    monthly: {
-      type: string;
-      _sum: {
-        quantity: number;
-      };
+    history: {
+      date: string;
+      quantity: number;
     }[];
   };
+  onDateRangeChange: (range: DateRange, date: Date) => void;
 }
 
-const productionTypes = {
-  FINISHED_PRODUCT: 'منتج نهائي',
-  RAW_MATERIAL: 'مواد خام',
-  PACKAGING: 'مواد تعبئة',
-  BOTTLE: 'زجاجات',
-  CARTON: 'كراتين',
-};
-
-export function ProductionChart({ data }: ProductionChartProps) {
+export function ProductionChart({ data, onDateRangeChange }: ProductionChartProps) {
   const theme = useTheme();
-  const [view, setView] = useState<'quantity' | 'value'>('quantity');
+  const [dateRange, setDateRange] = useState<DateRange>('week');
+  const [currentDate, setCurrentDate] = useState(new Date());
 
-  // تحويل البيانات إلى الشكل المطلوب للرسم البياني
-  const chartData = data.monthly.map((item) => ({
-    name: productionTypes[item.type as keyof typeof productionTypes],
-    quantity: item._sum.quantity,
-    value: item._sum.quantity * (Math.random() * 100 + 50), // قيمة افتراضية للعرض
-  }));
-
-  const handleViewChange = (
-    _: React.MouseEvent<HTMLElement>,
-    newView: 'quantity' | 'value'
-  ) => {
-    if (newView !== null) {
-      setView(newView);
-    }
+  const handleRangeChange = (range: DateRange) => {
+    setDateRange(range);
+    onDateRangeChange(range, currentDate);
   };
+
+  const handleDateChange = (date: Date) => {
+    setCurrentDate(date);
+    onDateRangeChange(dateRange, date);
+  };
+
+  // حساب إجمالي الإنتاج للفترة المحددة
+  const totalProduction = data.history.reduce(
+    (sum, item) => sum + item.quantity,
+    0
+  );
+
+  // حساب متوسط الإنتاج اليومي
+  const averageProduction = totalProduction / data.history.length || 0;
 
   return (
     <Card
@@ -67,81 +63,85 @@ export function ProductionChart({ data }: ProductionChartProps) {
       className="h-full"
     >
       <CardHeader
-        title="إحصائيات الإنتاج"
-        action={
-          <ToggleButtonGroup
-            value={view}
-            exclusive
-            onChange={handleViewChange}
-            size="small"
-            dir="ltr"
-          >
-            <ToggleButton value="quantity">الكمية</ToggleButton>
-            <ToggleButton value="value">القيمة</ToggleButton>
-          </ToggleButtonGroup>
+        title={
+          <Box className="flex justify-between items-center">
+            <Typography variant="h6">الإنتاج</Typography>
+            <DateRangeSelector
+              range={dateRange}
+              onRangeChange={handleRangeChange}
+              onDateChange={handleDateChange}
+              currentDate={currentDate}
+            />
+          </Box>
         }
       />
       <CardContent>
-        <div className="h-[400px]">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={view}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="h-full"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={chartData}
-                  margin={{
-                    top: 10,
-                    right: 30,
-                    left: 0,
-                    bottom: 0,
-                  }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={theme.palette.divider}
+        <Box className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <Box className="p-4 rounded-lg bg-black/5 dark:bg-white/5">
+            <Typography variant="subtitle2" color="text.secondary">
+              إجمالي الإنتاج
+            </Typography>
+            <Typography variant="h4" className="mt-1">
+              {totalProduction.toLocaleString()}
+            </Typography>
+          </Box>
+          <Box className="p-4 rounded-lg bg-primary/10">
+            <Typography variant="subtitle2" color="primary">
+              متوسط الإنتاج اليومي
+            </Typography>
+            <Typography variant="h4" className="mt-1" color="primary">
+              {averageProduction.toFixed(0)}
+            </Typography>
+          </Box>
+        </Box>
+
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data.history}>
+              <defs>
+                <linearGradient id="colorProduction" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor={theme.palette.primary.main}
+                    stopOpacity={0.8}
                   />
-                  <XAxis
-                    dataKey="name"
-                    stroke={theme.palette.text.secondary}
-                    tick={{ fill: theme.palette.text.secondary }}
+                  <stop
+                    offset="95%"
+                    stopColor={theme.palette.primary.main}
+                    stopOpacity={0}
                   />
-                  <YAxis
-                    stroke={theme.palette.text.secondary}
-                    tick={{ fill: theme.palette.text.secondary }}
-                    tickFormatter={(value) =>
-                      view === 'value'
-                        ? `${value.toLocaleString('ar-EG')} ج.م`
-                        : value.toLocaleString('ar-EG')
-                    }
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: theme.palette.background.paper,
-                      border: `1px solid ${theme.palette.divider}`,
-                    }}
-                    formatter={(value: number) =>
-                      view === 'value'
-                        ? `${value.toLocaleString('ar-EG')} ج.م`
-                        : value.toLocaleString('ar-EG')
-                    }
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey={view}
-                    stroke={theme.palette.primary.main}
-                    fill={theme.palette.primary.main}
-                    fillOpacity={0.3}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </motion.div>
-          </AnimatePresence>
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke={theme.palette.divider}
+              />
+              <XAxis
+                dataKey="date"
+                stroke={theme.palette.text.secondary}
+                tick={{ fill: theme.palette.text.secondary }}
+              />
+              <YAxis
+                stroke={theme.palette.text.secondary}
+                tick={{ fill: theme.palette.text.secondary }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: theme.palette.background.paper,
+                  border: `1px solid ${theme.palette.divider}`,
+                }}
+                formatter={(value: number) => [value.toLocaleString(), "الكمية"]}
+                labelStyle={{ color: theme.palette.text.primary }}
+              />
+              <Area
+                type="monotone"
+                dataKey="quantity"
+                stroke={theme.palette.primary.main}
+                fillOpacity={1}
+                fill="url(#colorProduction)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
       </CardContent>
     </Card>

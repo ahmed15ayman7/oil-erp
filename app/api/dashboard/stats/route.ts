@@ -1,20 +1,106 @@
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/auth';
+import { addDays, startOfDay, endOfDay, subDays, format } from 'date-fns';
+import { ar } from 'date-fns/locale';
 
-export async function GET() {
+// دالة مساعدة للحصول على نطاق التاريخ
+function getDateRange(range: string, date: string) {
+  const currentDate = new Date(date);
+  let startDate = startOfDay(currentDate);
+  let endDate = endOfDay(currentDate);
+
+  switch (range) {
+    case 'week':
+      startDate = subDays(startDate, 6);
+      break;
+    case 'month':
+      startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      break;
+    case 'year':
+      startDate = new Date(currentDate.getFullYear(), 0, 1);
+      endDate = new Date(currentDate.getFullYear(), 11, 31);
+      break;
+  }
+
+  return { startDate, endDate };
+}
+
+// دالة لإرسال إشعار WhatsApp
+async function sendWhatsAppNotification(product: any) {
+  const accessToken = process.env.META_ACCESS_TOKEN;
+  const phoneNumberId = process.env.META_PHONE_NUMBER_ID;
+  const recipientNumber = process.env.ADMIN_WHATSAPP_NUMBER;
+
+  if (!accessToken || !phoneNumberId || !recipientNumber) {
+    console.error('WhatsApp credentials not configured');
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: recipientNumber,
+          type: 'template',
+          template: {
+            name: 'low_stock_alert',
+            language: {
+              code: 'ar',
+            },
+            components: [
+              {
+                type: 'body',
+                parameters: [
+                  {
+                    type: 'text',
+                    text: product.name,
+                  },
+                  {
+                    type: 'text',
+                    text: product.quantity.toString(),
+                  },
+                  {
+                    type: 'text',
+                    text: product.minQuantity.toString(),
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to send WhatsApp notification');
+    }
+  } catch (error) {
+    console.error('Error sending WhatsApp notification:', error);
+  }
+}
+
+export async function GET(request: Request) {
   try {
     const session = await getAuthSession();
     if (!session) {
       return new NextResponse("غير مصرح", { status: 401 });
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const lastWeek = new Date(today);
-    lastWeek.setDate(lastWeek.getDate() - 7);
-    const lastMonth = new Date(today);
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    // استخراج معلمات التصفية من URL
+    const { searchParams } = new URL(request.url);
+    const range = searchParams.get('range') || 'week';
+    const date = searchParams.get('date') || new Date().toISOString();
+
+    const { startDate, endDate } = getDateRange(range, date);
 
     const [
       // الإحصائيات الأساسية
@@ -29,17 +115,17 @@ export async function GET() {
       productsCount,
       
       // إحصائيات المبيعات والإنتاج
-      weeklyProduction,
-      monthlyProduction,
-      salesByProduct,
+      productionHistory,
+      salesHistory,
       
       // إحصائيات المخزون والموارد
       lowStockProducts,
       materialStats,
+      inventoryHistory,
       
       // إحصائيات الموظفين والمركبات
       activeDrivers,
-      pendingDeliveries
+      deliveryStats
     ] = await Promise.all([
       // الإحصائيات الأساسية
       prisma.product.aggregate({
@@ -49,7 +135,7 @@ export async function GET() {
         where: { status: 'ACTIVE' }
       }),
       prisma.sale.aggregate({
-        where: { date: { gte: today } },
+        where: { date: { gte: startOfDay(new Date()) } },
         _sum: { total: true }
       }),
       prisma.transaction.aggregate({
@@ -61,32 +147,32 @@ export async function GET() {
       prisma.supplier.count(),
       prisma.product.count(),
       
-      // إحصائيات المبيعات والإنتاج على مدار الأسبوع
+      // إحصائيات الإنتاج والمبيعات
+      prisma.stockMovement.groupBy({
+        by: ['createdAt'],
+        where: {
+          type: 'PURCHASE',
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        _sum: {
+          quantity: true,
+        },
+      }),
+      
       prisma.sale.groupBy({
         by: ['date'],
-        where: { date: { gte: lastWeek } },
-        _sum: { total: true }
-      }),
-      
-      // إحصائيات الإنتاج الشهري
-      prisma.product.groupBy({
-        by: ['type'],
-        where: { 
-          createdAt: { gte: lastMonth }
+        where: {
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
         },
-        _sum: { quantity: true }
-      }),
-      
-      // المبيعات حسب المنتج
-      prisma.saleItem.groupBy({
-        by: ['productId'],
-        where: { 
-          sale: { date: { gte: lastMonth } }
+        _sum: {
+          total: true,
         },
-        _sum: { 
-          quantity: true,
-          total: true
-        }
       }),
       
       // المنتجات منخفضة المخزون
@@ -107,32 +193,86 @@ export async function GET() {
         by: ['type'],
         _sum: { quantity: true }
       }),
+
+      // سجل حركة المخزون
+      prisma.stockMovement.groupBy({
+        by: ['createdAt', 'type'],
+        where: {
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        _sum: {
+          quantity: true,
+        },
+      }),
       
       // السائقين النشطين
       prisma.driver.count({
         where: { status: 'ACTIVE' }
       }),
       
-      // التوصيلات المعلقة
-      prisma.delivery.count({
-        where: { status: 'PENDING' }
+      // إحصائيات التوصيل
+      prisma.delivery.groupBy({
+        by: ['status'],
+        _count: true,
       })
     ]);
+
+    // إرسال إشعارات WhatsApp للمنتجات منخفضة المخزون
+    for (const product of lowStockProducts) {
+      if (product.quantity <= product.minQuantity) {
+        await sendWhatsAppNotification(product);
+      }
+    }
+
+    // تنظيم بيانات سجل المخزون
+    const inventoryHistoryMap = new Map();
+    let currentStock = inventoryStats._sum.quantity || 0;
+
+    inventoryHistory.forEach((record) => {
+      const date = format(record.createdAt, 'yyyy-MM-dd', { locale: ar });
+      if (!inventoryHistoryMap.has(date)) {
+        inventoryHistoryMap.set(date, {
+          date,
+          inStock: currentStock,
+          added: 0,
+          removed: 0,
+        });
+      }
+
+      const entry = inventoryHistoryMap.get(date);
+      if (record.type === 'PURCHASE') {
+        entry.added += record._sum.quantity || 0;
+      } else if (record.type === 'SALE') {
+        entry.removed += record._sum.quantity || 0;
+      }
+    });
+
+    // تحويل التوصيلات إلى التنسيق المطلوب
+    const deliveries = deliveryStats.map((stat) => ({
+      status: stat.status,
+      count: stat._count,
+    }));
 
     return NextResponse.json({
       // الإحصائيات الأساسية
       inventory: {
         total: inventoryStats._sum.quantity || 0,
-        lowStock: lowStockProducts.length
+        lowStock: lowStockProducts.length,
+        history: Array.from(inventoryHistoryMap.values()),
       },
       vehicles: {
         active: activeVehicles,
-        pendingDeliveries
+        pendingDeliveries: deliveries.find((d) => d.status === 'PENDING')?.count || 0,
       },
       sales: {
         today: todaySales._sum.total || 0,
-        weekly: weeklyProduction,
-        byProduct: salesByProduct
+        history: salesHistory.map((record) => ({
+          date: format(record.date, 'yyyy-MM-dd', { locale: ar }),
+          total: record._sum.total || 0,
+        })),
       },
       treasury: treasury._sum.amount || 0,
       
@@ -146,15 +286,17 @@ export async function GET() {
       
       // إحصائيات الإنتاج
       production: {
-        monthly: monthlyProduction,
-        materials: materialStats
+        history: productionHistory.map((record) => ({
+          date: format(record.createdAt, 'yyyy-MM-dd', { locale: ar }),
+          quantity: record._sum.quantity || 0,
+        })),
+        materials: materialStats,
       },
       
       // معلومات تحليلية
       analytics: {
         lowStockProducts,
-        productionTrends: monthlyProduction,
-        materialUsage: materialStats
+        deliveries,
       },
       
       // الوقت والتحديث

@@ -4,22 +4,37 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  LinearProgress,
-  Typography,
   Box,
-} from '@mui/material';
-import { motion } from 'framer-motion';
+  Typography,
+  Chip,
+  Tooltip,
+} from "@mui/material";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Line,
+  ComposedChart,
+} from "recharts";
+import { motion } from "framer-motion";
+import { useTheme } from "@mui/material/styles";
+import { DateRangeSelector, DateRange } from "../date-range-selector";
+import { useState } from "react";
 
 interface InventoryStatusProps {
   data: {
     total: number;
     lowStock: number;
+    history: {
+      date: string;
+      inStock: number;
+      added: number;
+      removed: number;
+    }[];
     lowStockProducts: {
       id: string;
       name: string;
@@ -27,9 +42,24 @@ interface InventoryStatusProps {
       minQuantity: number;
     }[];
   };
+  onDateRangeChange: (range: DateRange, date: Date) => void;
 }
 
-export function InventoryStatus({ data }: InventoryStatusProps) {
+export function InventoryStatus({ data, onDateRangeChange }: InventoryStatusProps) {
+  const theme = useTheme();
+  const [dateRange, setDateRange] = useState<DateRange>("week");
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const handleRangeChange = (range: DateRange) => {
+    setDateRange(range);
+    onDateRangeChange(range, currentDate);
+  };
+
+  const handleDateChange = (date: Date) => {
+    setCurrentDate(date);
+    onDateRangeChange(dateRange, date);
+  };
+
   return (
     <Card
       component={motion.div}
@@ -38,75 +68,107 @@ export function InventoryStatus({ data }: InventoryStatusProps) {
       className="h-full"
     >
       <CardHeader
-        title="حالة المخزون"
-        subheader={`${data.lowStock} منتج تحت الحد الأدنى`}
+        title={
+          <Box className="flex justify-between items-center">
+            <Typography variant="h6">حالة المخزون</Typography>
+            <DateRangeSelector
+              range={dateRange}
+              onRangeChange={handleRangeChange}
+              onDateChange={handleDateChange}
+              currentDate={currentDate}
+            />
+          </Box>
+        }
       />
       <CardContent>
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>المنتج</TableCell>
-                <TableCell align="center">الكمية الحالية</TableCell>
-                <TableCell align="center">الحد الأدنى</TableCell>
-                <TableCell align="right">النسبة</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data.lowStockProducts.map((product) => {
-                const percentage =
-                  (product.quantity / product.minQuantity) * 100;
-                return (
-                  <TableRow
-                    key={product.id}
-                    component={motion.tr}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    whileHover={{ scale: 1.01 }}
-                  >
-                    <TableCell>{product.name}</TableCell>
-                    <TableCell align="center">
-                      {product.quantity.toLocaleString()}
-                    </TableCell>
-                    <TableCell align="center">
-                      {product.minQuantity.toLocaleString()}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={percentage}
-                          sx={{
-                            flexGrow: 1,
-                            height: 8,
-                            borderRadius: 1,
-                            backgroundColor: (theme) =>
-                              theme.palette.action.hover,
-                            '& .MuiLinearProgress-bar': {
-                              backgroundColor: (theme) =>
-                                percentage < 50
-                                  ? theme.palette.error.main
-                                  : percentage < 75
-                                  ? theme.palette.warning.main
-                                  : theme.palette.success.main,
-                            },
-                          }}
-                        />
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ minWidth: 35 }}
-                        >
-                          {percentage.toFixed(0)}%
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <Box className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <Box className="p-4 rounded-lg bg-black/5 dark:bg-white/5">
+            <Typography variant="subtitle2" color="text.secondary">
+              إجمالي المخزون
+            </Typography>
+            <Typography variant="h4" className="mt-1">
+              {data.total.toLocaleString()}
+            </Typography>
+          </Box>
+          <Box className="p-4 rounded-lg bg-error/10">
+            <Typography variant="subtitle2" color="error">
+              منتجات منخفضة المخزون
+            </Typography>
+            <Typography variant="h4" className="mt-1" color="error">
+              {data.lowStock.toLocaleString()}
+            </Typography>
+          </Box>
+        </Box>
+
+        <div className="h-[300px] mb-6">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={data.history}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke={theme.palette.divider}
+              />
+              <XAxis
+                dataKey="date"
+                stroke={theme.palette.text.secondary}
+                tick={{ fill: theme.palette.text.secondary }}
+              />
+              <YAxis
+                stroke={theme.palette.text.secondary}
+                tick={{ fill: theme.palette.text.secondary }}
+              />
+              <RechartsTooltip
+                contentStyle={{
+                  backgroundColor: theme.palette.background.paper,
+                  border: `1px solid ${theme.palette.divider}`,
+                }}
+                formatter={(value: number) => [value.toLocaleString(), ""]}
+                labelStyle={{ color: theme.palette.text.primary }}
+              />
+              <Bar
+                dataKey="added"
+                name="تمت الإضافة"
+                fill={theme.palette.success.main}
+                opacity={0.8}
+              />
+              <Bar
+                dataKey="removed"
+                name="تم السحب"
+                fill={theme.palette.error.main}
+                opacity={0.8}
+              />
+              <Line
+                type="monotone"
+                dataKey="inStock"
+                name="المخزون"
+                stroke={theme.palette.primary.main}
+                strokeWidth={2}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+
+        {data.lowStockProducts.length > 0 && (
+          <Box>
+            <Typography variant="subtitle2" className="mb-2">
+              المنتجات منخفضة المخزون
+            </Typography>
+            <div className="flex flex-wrap gap-2">
+              {data.lowStockProducts.map((product) => (
+                <Tooltip
+                  key={product.id}
+                  title={`الكمية الحالية: ${product.quantity} | الحد الأدنى: ${product.minQuantity}`}
+                >
+                  <Chip
+                    label={product.name}
+                    color="error"
+                    variant="outlined"
+                    size="small"
+                  />
+                </Tooltip>
+              ))}
+            </div>
+          </Box>
+        )}
       </CardContent>
     </Card>
   );
