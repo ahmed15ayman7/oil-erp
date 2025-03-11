@@ -29,9 +29,9 @@ function getDateRange(range: string, date: string) {
 
 // دالة لإرسال إشعار WhatsApp
 async function sendWhatsAppNotification(product: any) {
-  const accessToken = process.env.META_ACCESS_TOKEN;
-  const phoneNumberId = process.env.META_PHONE_NUMBER_ID;
-  const recipientNumber = process.env.ADMIN_WHATSAPP_NUMBER;
+  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const recipientNumber = process.env.WHATSAPP_TO_PHONE_NUMBER;
 
   if (!accessToken || !phoneNumberId || !recipientNumber) {
     console.error('WhatsApp credentials not configured');
@@ -108,21 +108,21 @@ export async function GET(request: Request) {
       activeVehicles,
       todaySales,
       treasury,
-      
+
       // إحصائيات إضافية
       customersCount,
       suppliersCount,
       productsCount,
-      
+
       // إحصائيات المبيعات والإنتاج
       productionHistory,
       salesHistory,
-      
+
       // إحصائيات المخزون والموارد
       lowStockProducts,
       materialStats,
       inventoryHistory,
-      
+
       // إحصائيات الموظفين والمركبات
       activeDrivers,
       deliveryStats
@@ -141,12 +141,12 @@ export async function GET(request: Request) {
       prisma.transaction.aggregate({
         _sum: { amount: true }
       }),
-      
+
       // إحصائيات إضافية
       prisma.customer.count(),
       prisma.supplier.count(),
       prisma.product.count(),
-      
+
       // إحصائيات الإنتاج والمبيعات
       prisma.stockMovement.groupBy({
         by: ['createdAt'],
@@ -161,7 +161,7 @@ export async function GET(request: Request) {
           quantity: true,
         },
       }),
-      
+
       prisma.sale.groupBy({
         by: ['date'],
         where: {
@@ -174,7 +174,7 @@ export async function GET(request: Request) {
           total: true,
         },
       }),
-      
+
       // المنتجات منخفضة المخزون
       prisma.product.findMany({
         where: {
@@ -187,7 +187,7 @@ export async function GET(request: Request) {
           minQuantity: true
         }
       }),
-      
+
       // إحصائيات المواد الخام
       prisma.material.groupBy({
         by: ['type'],
@@ -207,12 +207,12 @@ export async function GET(request: Request) {
           quantity: true,
         },
       }),
-      
+
       // السائقين النشطين
       prisma.driver.count({
         where: { status: 'ACTIVE' }
       }),
-      
+
       // إحصائيات التوصيل
       prisma.delivery.groupBy({
         by: ['status'],
@@ -275,7 +275,7 @@ export async function GET(request: Request) {
         })),
       },
       treasury: treasury._sum.amount || 0,
-      
+
       // إحصائيات عامة
       counts: {
         customers: customersCount,
@@ -283,7 +283,7 @@ export async function GET(request: Request) {
         products: productsCount,
         activeDrivers
       },
-      
+
       // إحصائيات الإنتاج
       production: {
         history: productionHistory.map((record) => ({
@@ -292,13 +292,13 @@ export async function GET(request: Request) {
         })),
         materials: materialStats,
       },
-      
+
       // معلومات تحليلية
       analytics: {
         lowStockProducts,
         deliveries,
       },
-      
+
       // الوقت والتحديث
       lastUpdate: new Date().toISOString()
     });

@@ -24,7 +24,7 @@ export default function DashboardPage() {
   // استخدام React Query لجلب البيانات
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ["dashboardStats", dateRange, currentDate],
-    queryFn: () => 
+    queryFn: () =>
       fetch(`/api/dashboard/stats?range=${dateRange}&date=${currentDate.toISOString()}`)
         .then((res) => res.json()),
     refetchInterval: 30000, // تحديث كل 30 ثانية
@@ -74,7 +74,7 @@ export default function DashboardPage() {
   }
 
   const isLoading = statsLoading || categoriesLoading || unitsLoading;
-
+  console.log("data", stats)
   return (
     <AnimatePresence>
       <motion.div
@@ -98,8 +98,8 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <ProductionChart 
-                    data={stats.production} 
+                  <ProductionChart
+                    data={stats.production}
                     onDateRangeChange={handleDateRangeChange}
                   />
                 </motion.div>
@@ -111,8 +111,8 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.3 }}
                 >
-                  <SalesAnalytics 
-                    data={stats.sales} 
+                  <SalesAnalytics
+                    data={stats.sales}
                     onDateRangeChange={handleDateRangeChange}
                   />
                 </motion.div>
@@ -124,7 +124,7 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.4 }}
                 >
-                  <InventoryStatus 
+                  <InventoryStatus
                     data={{ ...stats.inventory, lowStockProducts: stats.analytics.lowStockProducts }}
                     onDateRangeChange={handleDateRangeChange}
                   />
