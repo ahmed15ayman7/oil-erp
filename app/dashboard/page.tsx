@@ -1,128 +1,172 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Grid } from "@mui/material";
-import { Loading } from "@/components/loading";
+import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "@mui/material/styles";
 import { PageHeader } from "@/components/page-header";
-import { StatsCard } from "@/components/stats-card";
-import {
-  IconBox,
-  IconTruck,
-  IconCoin,
-  IconReportMoney,
-} from "@tabler/icons-react";
-import { useApi } from "@/hooks/use-api";
-import { StatsCards } from "@/components/dashboard/stats-cards";
-import { SalesChart } from "@/components/dashboard/sales-chart";
+import { DashboardStats } from "@/components/dashboard/stats";
+import { ProductionChart } from "@/components/dashboard/charts/production-chart";
+import { SalesAnalytics } from "@/components/dashboard/charts/sales-analytics";
+import { InventoryStatus } from "@/components/dashboard/charts/inventory-status";
+import { MaterialsUsage } from "@/components/dashboard/charts/materials-usage";
+import { DeliveryStatus } from "@/components/dashboard/charts/delivery-status";
 import { CategoriesManagement } from "@/components/dashboard/categories-management";
 import { UnitsManagement } from "@/components/dashboard/units-management";
+import { useWebSocket } from "@/hooks/use-websocket";
+import { LoadingOverlay } from "@/components/loading-overlay";
 
 export default function DashboardPage() {
-  const api = useApi();
-  const { data: stats, isLoading } = useQuery({
+  const queryClient = useQueryClient();
+  const theme = useTheme();
+  
+  // استخدام React Query لجلب البيانات
+  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ["dashboardStats"],
-    queryFn: () => api.get("/api/dashboard/stats"),
-  });
-  const { data: stats2, isLoading: statsLoading } = useQuery({
-    queryKey: ["dashboard-stats"],
-    queryFn: () => fetch("/api/dashboard/stats2").then((res) => res.json()),
+    queryFn: () => fetch("/api/dashboard/stats").then((res) => res.json()),
+    refetchInterval: 30000, // تحديث كل 30 ثانية
   });
 
-  const { data: salesData, isLoading: salesLoading } = useQuery({
-    queryKey: ["dashboard-sales"],
-    queryFn: () => fetch("/api/dashboard/sales").then((res) => res.json()),
-  });
-
-  const {
-    data: categories,
-    isLoading: categoriesLoading,
-    refetch: refetchCategories,
-  } = useQuery({
+  // جلب بيانات التصنيفات
+  const { data: categories, isLoading: categoriesLoading, refetch: refetchCategories } = useQuery({
     queryKey: ["categories"],
-    
     queryFn: () => fetch("/api/categories").then((res) => res.json()),
   });
 
-  const {
-    data: units,
-    isLoading: unitsLoading,
-    refetch: refetchUnits,
-  } = useQuery({
+  // جلب بيانات الوحدات
+  const { data: units, isLoading: unitsLoading, refetch: refetchUnits } = useQuery({
     queryKey: ["units"],
     queryFn: () => fetch("/api/units").then((res) => res.json()),
   });
 
-  if (statsLoading || salesLoading || categoriesLoading || unitsLoading) {
-    return <Loading />;
+  // إعداد WebSocket للتحديثات المباشرة
+  useWebSocket({
+    url: process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001",
+    onMessage: (data: string) => {
+      const parsedData = JSON.parse(data);
+      if (parsedData.type === 'stats') {
+        queryClient.setQueryData(["dashboardStats"], (oldData: any) => ({
+          ...oldData,
+          ...parsedData.data,
+        }));
+      } else if (parsedData.type === 'categories') {
+        refetchCategories();
+      } else if (parsedData.type === 'units') {
+        refetchUnits();
+      }
+    },
+  });
+
+  if (statsError) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-error">حدث خطأ أثناء تحميل البيانات</p>
+      </div>
+    );
   }
 
-  if (isLoading) {
-    return <Loading />;
-  }
-
-  const statCards = [
-    {
-      title: "المخزون",
-      value: stats?.inventory.toLocaleString() || "0",
-      icon: <IconBox className="w-8 h-8" />,
-      color: "primary.main",
-    },
-    {
-      title: "المركبات النشطة",
-      value: stats?.activeVehicles.toLocaleString() || "0",
-      icon: <IconTruck className="w-8 h-8" />,
-      color: "success.main",
-    },
-    {
-      title: "المبيعات اليوم",
-      value:
-        stats?.todaySales.toLocaleString("ar-EG", {
-          style: "currency",
-          currency: "EGP",
-        }) || "0",
-      icon: <IconCoin className="w-8 h-8" />,
-      color: "info.main",
-    },
-    {
-      title: "رصيد الخزنة",
-      value:
-        stats?.treasury.toLocaleString("ar-EG", {
-          style: "currency",
-          currency: "EGP",
-        }) || "0",
-      icon: <IconReportMoney className="w-8 h-8" />,
-      color: "warning.main",
-    },
-  ];
+  const isLoading = statsLoading || categoriesLoading || unitsLoading;
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="لوحة التحكم" />
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        className="space-y-6"
+      >
+        <PageHeader title="لوحة التحكم" />
 
-      <Grid container spacing={3}>
-        {statCards.map((card) => (
-          <Grid item xs={12} sm={6} md={3} key={card.title}>
-            <StatsCard {...card} />
-          </Grid>
-        ))}
-      </Grid>
+        {isLoading ? (
+          <LoadingOverlay />
+        ) : (
+          <>
+            <DashboardStats stats={stats} />
 
-      <StatsCards stats={stats2} />
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={8}>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <ProductionChart data={stats.production} />
+                </motion.div>
+              </Grid>
+              
+              <Grid item xs={12} md={4}>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <SalesAnalytics data={stats.sales} />
+                </motion.div>
+              </Grid>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <SalesChart data={salesData} />
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <div className="space-y-3">
-            <CategoriesManagement
-              categories={categories}
-              onUpdate={refetchCategories}
-            />
-            <UnitsManagement units={units} onUpdate={refetchUnits} />
-          </div>
-        </Grid>
-      </Grid>
-    </div>
+              <Grid item xs={12} md={6}>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <InventoryStatus data={stats.inventory} />
+                </motion.div>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <MaterialsUsage data={stats.production.materials} />
+                </motion.div>
+              </Grid>
+
+              <Grid item xs={12}>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <DeliveryStatus
+                    vehicles={stats.vehicles}
+                    deliveries={stats.analytics.deliveries}
+                  />
+                </motion.div>
+              </Grid>
+
+              {/* إدارة التصنيفات والوحدات */}
+              <Grid item xs={12} md={6}>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  <CategoriesManagement
+                    categories={categories}
+                    onUpdate={refetchCategories}
+                  />
+                </motion.div>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  <UnitsManagement
+                    units={units}
+                    onUpdate={refetchUnits}
+                  />
+                </motion.div>
+              </Grid>
+            </Grid>
+          </>
+        )}
+      </motion.div>
+    </AnimatePresence>
   );
 }
