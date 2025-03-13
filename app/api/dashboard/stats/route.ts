@@ -42,51 +42,41 @@ function calculateGrowth(current: number, previous: number): number {
 }
 
 // دالة لإرسال إشعار WhatsApp
-async function sendWhatsAppNotification(product: any) {
+async function sendWhatsAppNotification(product: { name: string; quantity: number; minQuantity: number }) {
   const accessToken = process.env.META_ACCESS_TOKEN;
   const phoneNumberId = process.env.META_PHONE_NUMBER_ID;
   const recipientNumber = process.env.ADMIN_WHATSAPP_NUMBER;
 
   if (!accessToken || !phoneNumberId || !recipientNumber) {
-    console.error('WhatsApp credentials not configured');
+    console.error("❌ WhatsApp credentials not configured");
     return;
   }
 
   try {
-    console.log("sending")
+    console.log("🚀 Sending WhatsApp notification...");
+
     const response = await fetch(
-      `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
+      `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messaging_product: 'whatsapp',
+          messaging_product: "whatsapp",
           to: recipientNumber,
-          type: 'template',
+          type: "template",
           template: {
-            name: 'low_stock_alert',
-            language: {
-              code: 'ar',
-            },
+            name: "low_stock_alert", // تأكد من أن هذا هو اسم القالب الفعلي
+            language: { code: "ar" },
             components: [
               {
-                type: 'body',
+                type: "body",
                 parameters: [
-                  {
-                    type: 'text',
-                    text: product.name,
-                  },
-                  {
-                    type: 'text',
-                    text: product.quantity.toString(),
-                  },
-                  {
-                    type: 'text',
-                    text: product.minQuantity.toString(),
-                  },
+                  { type: "text", text: product.name },
+                  { type: "text", text: product.quantity.toString() },
+                  { type: "text", text: product.minQuantity.toString() },
                 ],
               },
             ],
@@ -95,11 +85,15 @@ async function sendWhatsAppNotification(product: any) {
       }
     );
 
+    const result = await response.json();
+
     if (!response.ok) {
-      throw new Error('Failed to send WhatsApp notification');
+      throw new Error(`Failed to send WhatsApp notification: ${result.error?.message || "Unknown error"}`);
     }
+
+    console.log("✅ WhatsApp notification sent successfully:", result);
   } catch (error) {
-    console.error('Error sending WhatsApp notification:', error);
+    console.error("❌ Error sending WhatsApp notification:", error);
   }
 }
 
@@ -165,10 +159,10 @@ export async function GET(request: Request) {
       prisma.product.count(),
 
       // إحصائيات الإنتاج والمبيعات
-      prisma.stockMovement.groupBy({
+      prisma.materialTransaction.groupBy({
         by: ['createdAt'],
         where: {
-          type: 'PURCHASE',
+          type: 'OUT',
           createdAt: {
             gte: startDate,
             lte: endDate,

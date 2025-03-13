@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Grid } from "@mui/material";
+import { Grid, Box, useTheme, useMediaQuery } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageHeader } from "@/components/page-header";
 import { DashboardStats } from "@/components/dashboard/stats";
@@ -35,28 +35,35 @@ const item = {
 };
 export default function DashboardPage() {
   const queryClient = useQueryClient();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  
   const [dateRange, setDateRange] = useState<DateRange>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // استخدام React Query لجلب البيانات
+  // استخدام React Query لجلب البيانات مع تحسين الأداء
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ["dashboardStats", dateRange, currentDate],
     queryFn: () =>
       fetch(`/api/dashboard/stats?range=${dateRange}&date=${currentDate.toISOString()}`)
         .then((res) => res.json()),
-    refetchInterval: 30000, // تحديث كل 30 ثانية
+    refetchInterval: 30000,
+    staleTime: 10000, // البيانات تبقى طازجة لمدة 10 ثواني
+    gcTime: 5 * 60 * 1000, // تخزين مؤقت لمدة 5 دقائق
   });
 
-  // جلب بيانات التصنيفات
+  // جلب بيانات التصنيفات والوحدات بشكل منفصل
   const { data: categories, isLoading: categoriesLoading, refetch: refetchCategories } = useQuery({
     queryKey: ["categories"],
     queryFn: () => fetch("/api/categories").then((res) => res.json()),
+    staleTime: 5 * 60 * 1000, // تخزين مؤقت لمدة 5 دقائق
   });
 
-  // جلب بيانات الوحدات
   const { data: units, isLoading: unitsLoading, refetch: refetchUnits } = useQuery({
     queryKey: ["units"],
     queryFn: () => fetch("/api/units").then((res) => res.json()),
+    staleTime: 5 * 60 * 1000, // تخزين مؤقت لمدة 5 دقائق
   });
 
   // إعداد WebSocket للتحديثات المباشرة
@@ -121,7 +128,7 @@ export default function DashboardPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-6"
+        className="space-y-4 md:space-y-6 p-4 md:p-6"
       >
         <PageHeader title="لوحة التحكم" />
 
@@ -156,6 +163,7 @@ export default function DashboardPage() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.2 }}
+                  className="h-full"
                 >
                   <ProductionChart
                     data={stats.production}
@@ -169,6 +177,7 @@ export default function DashboardPage() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.3 }}
+                  className="h-full"
                 >
                   <SalesAnalytics
                     data={stats.sales}
@@ -177,11 +186,13 @@ export default function DashboardPage() {
                 </motion.div>
               </Grid>
 
+              {/* المخزون والموارد */}
               <Grid item xs={12} md={6}>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.4 }}
+                  className="h-full"
                 >
                   <InventoryStatus
                     data={{ ...stats.inventory, lowStockProducts: stats.analytics.lowStockProducts }}
@@ -195,16 +206,19 @@ export default function DashboardPage() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.5 }}
+                  className="h-full"
                 >
                   <MaterialsUsage data={stats.production.materials} />
                 </motion.div>
               </Grid>
 
+              {/* التوصيل */}
               <Grid item xs={12}>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.6 }}
+                  className="h-full"
                 >
                   <DeliveryStatus
                     vehicles={stats.vehicles}
@@ -219,6 +233,7 @@ export default function DashboardPage() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.7 }}
+                  className="h-full"
                 >
                   <CategoriesManagement
                     categories={categories}
@@ -232,6 +247,7 @@ export default function DashboardPage() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.8 }}
+                  className="h-full"
                 >
                   <UnitsManagement
                     units={units}
