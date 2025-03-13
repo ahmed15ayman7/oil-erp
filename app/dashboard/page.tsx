@@ -38,7 +38,7 @@ export default function DashboardPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const [dateRange, setDateRange] = useState<DateRange>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -121,7 +121,7 @@ export default function DashboardPage() {
       color: "error.main",
     },
   ];
-
+  console.log(stats)
   return (
     <AnimatePresence>
       <motion.div
