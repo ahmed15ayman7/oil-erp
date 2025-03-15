@@ -8,7 +8,7 @@ import { Loading } from '@/components/loading';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { SaleFormDialog } from '@/components/sales/sale-form-dialog';
 import { SearchInput } from '@/components/search-input';
-import { Box, Chip, Grid, MenuItem, TextField, Button, Paper, Stack } from '@mui/material';
+import { Box, Chip, Grid, MenuItem, TextField, Button, Paper, Stack, Autocomplete } from '@mui/material';
 import { useApi } from '@/hooks/use-api';
 import { IconFileSpreadsheet, IconPlus, IconPrinter } from '@tabler/icons-react';
 import * as ExcelJS from 'exceljs';
@@ -54,9 +54,9 @@ const columns = [
     label: 'الحالة',
     format: (value: string) => {
       const statusMap = {
-        PENDING: { label: 'معلقة', color: 'warning' },
-        COMPLETED: { label: 'مكتملة', color: 'success' },
-        CANCELLED: { label: 'ملغاة', color: 'error' },
+        UNPAID: { label: 'غير مدفوعة', color: 'warning' },
+        PAID: { label: 'مدفوعة', color: 'success' },
+        PARTIALLY_PAID: { label: 'مدفوعة جزئياً', color: 'warning' },
       };
       const status = statusMap[value as keyof typeof statusMap];
       return (
@@ -89,6 +89,7 @@ export default function SalesPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sales, setSales] = useState([]);
+  const [status, setStatus] = useState('');
   const api = useApi();
 
   const {
@@ -96,22 +97,17 @@ export default function SalesPage() {
     isLoading,
     refetch: refetchSales,
   } = useQuery({
-    queryKey: ['sales', page, rowsPerPage, searchQuery],
+    queryKey: ['sales', page, rowsPerPage, searchQuery, status],
     queryFn: () =>
       api.get(
-        `/api/sales?page=${page + 1}&limit=${rowsPerPage}&search=${searchQuery}`
+        `/api/sales?page=${page + 1}&limit=${rowsPerPage}&search=${searchQuery}&status=${status}`
       ),
   });
-
+let statuses = [{id:'UNPAID',name:'غير مدفوعة'},{id:'PAID',name:'مدفوعة'},{id:'PARTIALLY_PAID',name:'مدفوعة جزئياً'}]
   useEffect(() => {
-    fetchSales();
-  }, []);
+    refetchSales();
+  }, [status,searchQuery,page,rowsPerPage]);
 
-  const fetchSales = async () => {
-    const response = await fetch("/api/sales");
-    const data = await response.json();
-    setSales(data);
-  };
 
   const exportToExcel = async () => {
     const workbook = new ExcelJS.Workbook();
@@ -250,6 +246,18 @@ export default function SalesPage() {
             <SearchInput
               onSearch={setSearchQuery}
               placeholder="البحث في الفواتير..."
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Autocomplete
+              options={statuses || []}
+              getOptionLabel={(option) => option.name}
+              renderInput={(params) => (
+                <TextField {...params} label="الحالة" />
+              )}
+              onChange={(_, newValue) => {
+                setStatus(newValue?.id || '');
+              }}
             />
           </Grid>
         </Grid>

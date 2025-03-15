@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DataTable } from "@/components/data-table";
 import { PageHeader } from "@/components/page-header";
@@ -8,7 +8,7 @@ import { Loading } from "@/components/loading";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { CustomerFormDialog } from "@/components/customers/customer-form-dialog";
 import { SearchInput } from "@/components/search-input";
-import { Box, Chip, Button } from "@mui/material";
+import { Box, Chip, Button, Grid, Autocomplete, TextField } from "@mui/material";
 import { ExcelImportDialog } from "@/components/customers/excel-import-dialog";
 import {
   IconFileExport,
@@ -64,19 +64,26 @@ export default function CustomersPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [type, setType] = useState("");
+  let types = [{id:'WHOLESALE',name:'قطاعي'},{id:'RETAIL',name:'جملة'}]
+
   const {
     data,
     isLoading,
     refetch: refetchCustomers,
   } = useQuery({
-    queryKey: ["customers", page, rowsPerPage, searchQuery],
+    queryKey: ["customers", page, rowsPerPage, searchQuery, type],
     queryFn: () =>
       fetch(
         `/api/customers?page=${
           page + 1
-        }&limit=${rowsPerPage}&search=${searchQuery}`
+        }&limit=${rowsPerPage}&search=${searchQuery}&type=${type}`
       ).then((res) => res.json()),
   });
+
+  useEffect(() => {
+    refetchCustomers();
+  }, [type,searchQuery,page,rowsPerPage]);
 
   const handleAdd = () => {
     setSelectedCustomer(null);
@@ -252,10 +259,26 @@ export default function CustomersPage() {
       />
 
       <Box className="mb-6">
-        <SearchInput
-          onSearch={setSearchQuery}
-          placeholder="البحث في العملاء..."
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <SearchInput
+              onSearch={setSearchQuery}
+              placeholder="البحث في العملاء..."
         />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Autocomplete
+              options={types}
+              getOptionLabel={(option) => option.name}
+              renderInput={(params) => (
+                <TextField {...params} label="النوع" />
+              )}
+              onChange={(_, newValue) => {
+                setType(newValue?.id || '');
+              }}
+            />
+          </Grid>
+        </Grid>
       </Box>
 
       {isLoading ? <Loading /> : data && <DataTable

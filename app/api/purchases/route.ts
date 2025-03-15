@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { ApiError } from '@/lib/api-error';
 import { successResponse, handleApiError } from '@/lib/api-response';
-import { Prisma } from '@prisma/client';
+import { Prisma, PaymentStatus, DeliveryStatusSupplier } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,10 +13,12 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
-    const status = searchParams.get('status');
+    
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const skip = (page - 1) * limit;
+    const paymentStatus = searchParams.get('paymentStatus');
+    const deliveryStatus = searchParams.get('deliveryStatus');
 
     const where: Prisma.PurchaseWhereInput = {
       AND: [
@@ -26,7 +28,8 @@ export async function GET(request: NextRequest) {
             { supplier: { name: { contains: search } } },
           ],
         },
-        status ? { status: status as any } : {},
+        paymentStatus ? { status: paymentStatus as PaymentStatus } : {},
+        deliveryStatus ? { deliveryStatus: deliveryStatus as DeliveryStatusSupplier } : {},
         startDate ? { date: { gte: new Date(startDate) } } : {},
         endDate ? { date: { lte: new Date(endDate) } } : {},
       ],
@@ -87,7 +90,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { supplierId, items, dueDate, tax, discount } = body;
+    const { supplierId, items, dueDate, tax, discount, status, deliveryStatus } = body;
 
     // حساب المجاميع
     const subtotal = items.reduce((sum: number, item: any) => sum + item.total, 0);
@@ -114,9 +117,12 @@ export async function POST(request: NextRequest) {
           discount,
           total,
           userId: session.user.id,
+          status,
+          deliveryStatus,
           items: {
             create: items.map((item: any) => ({
               materialId: item.materialId,
+              unitId: item.unitId,
               quantity: item.quantity,
               price: item.price,
               total: item.total,

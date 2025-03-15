@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DataTable } from '@/components/data-table';
 import { PageHeader } from '@/components/page-header';
@@ -7,7 +7,7 @@ import { Loading } from '@/components/loading';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { PurchaseFormDialog } from '@/components/purchases/purchase-form-dialog';
 import { SearchInput } from '@/components/search-input';
-import { Box, Chip } from '@mui/material';
+import { Box, Chip, Grid, TextField, MenuItem } from '@mui/material';
 import { useApi } from '@/hooks/use-api';
 
 const columns = [
@@ -40,7 +40,7 @@ const columns = [
       }),
   },
   {
-    id: 'paymentStatus',
+    id: 'status',
     label: 'حالة الدفع',
     format: (value: string) => {
       const statusMap = {
@@ -99,6 +99,11 @@ export default function PurchasesPage() {
   const [selectedPurchase, setSelectedPurchase] = useState<any>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('');
+  const [selectedDeliveryStatus, setSelectedDeliveryStatus] = useState('');
+const   paymentStatuses=[{id:'PAID',name:'مدفوع'},{id:'PARTIALLY_PAID',name:'مدفوع جزئياً'},{id:'UNPAID',name:'غير مدفوع'}]
+
+const deliveryStatuses=[{id:'DELIVERED',name:'تم التوريد'},{id:'PARTIALLY_DELIVERED',name:'توريد جزئي'},{id:'PENDING',name:'قيد الانتظار'}]
   const api = useApi();
 
   const {
@@ -106,15 +111,17 @@ export default function PurchasesPage() {
     isLoading,
     refetch: refetchPurchases,
   } = useQuery({
-    queryKey: ['purchases', page, rowsPerPage, searchQuery],
+    queryKey: ['purchases', page, rowsPerPage, searchQuery,selectedPaymentStatus,selectedDeliveryStatus],
     queryFn: () =>
       api.get(
         `/api/purchases?page=${
           page + 1
-        }&limit=${rowsPerPage}&search=${searchQuery}`
+        }&limit=${rowsPerPage}&search=${searchQuery}&paymentStatus=${selectedPaymentStatus}&deliveryStatus=${selectedDeliveryStatus}`
       ),
   });
-
+  useEffect(() => {
+    refetchPurchases();
+  }, [page, rowsPerPage, searchQuery,selectedPaymentStatus,selectedDeliveryStatus]);
   const handleAdd = () => {
     setSelectedPurchase(null);
     setFormOpen(true);
@@ -174,10 +181,47 @@ export default function PurchasesPage() {
       />
 
       <Box className="mb-6">
-        <SearchInput
-          onSearch={setSearchQuery}
-          placeholder="البحث في المشتريات..."
-        />
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6} md={3}>
+            <SearchInput
+              onSearch={setSearchQuery}
+              placeholder="البحث في المشتريات..."
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              select
+              fullWidth
+              label="حالة الدفع"
+              value={selectedPaymentStatus}
+              onChange={(e) => setSelectedPaymentStatus(e.target.value)}
+            >
+              <MenuItem value="">الكل</MenuItem>
+              {paymentStatuses.map((paymentStatus: any) => (
+                <MenuItem key={paymentStatus.id} value={paymentStatus.id}>
+                  {paymentStatus.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              select
+              fullWidth
+              label="حالة التوريد"
+              value={selectedDeliveryStatus}
+              onChange={(e) => setSelectedDeliveryStatus(e.target.value)}
+            >
+              <MenuItem value="">الكل</MenuItem>
+              {deliveryStatuses.map((deliveryStatus: any) => (
+                <MenuItem key={deliveryStatus.id} value={deliveryStatus.id}>
+                  {deliveryStatus.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+        
+        </Grid>
       </Box>
 
      {isLoading?<Loading/>: <DataTable

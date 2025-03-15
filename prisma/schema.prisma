@@ -107,6 +107,8 @@ model Unit {
   products    Product[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  PurchaseItem PurchaseItem[]
 }
 
 // Customer model
@@ -201,7 +203,7 @@ model Sale {
   customer      Customer  @relation(fields: [customerId], references: [id])
   date          DateTime
   dueDate       DateTime?
-  status        PaymentStatus @default(PENDING)
+  status        PaymentStatus @default(UNPAID)
   items         SaleItem[]
   subtotal      Float
   tax           Float     @default(0)
@@ -238,7 +240,8 @@ model Purchase {
   supplier      Supplier  @relation(fields: [supplierId], references: [id])
   date          DateTime
   dueDate       DateTime?
-  status        PaymentStatus @default(PENDING)
+  status        PaymentStatus @default(UNPAID)
+  deliveryStatus DeliveryStatusSupplier @default(PENDING)
   items         PurchaseItem[]
   subtotal      Float
   tax           Float     @default(0)
@@ -259,6 +262,8 @@ model PurchaseItem {
   materialId   String
   material     Material   @relation(fields: [materialId], references: [id])
   quantity    Float
+  unit        Unit @relation(fields: [unitId], references: [id])
+  unitId      String
   price       Float
   total       Float
   notes       String?
@@ -267,10 +272,13 @@ model PurchaseItem {
 enum PaymentStatus {
   PAID
   PARTIALLY_PAID
+  UNPAID
+}
+
+enum DeliveryStatusSupplier {
+  DELIVERED
+  PARTIALLY_DELIVERED
   PENDING
-  OVERDUE
-  CANCELLED
-  COMPLETED
 }
 
 // Transaction model for financial records

@@ -47,6 +47,7 @@ export function PurchaseFormDialog({
     items: [
       {
         materialId: '',
+        unitId: '',
         quantity: 1,
         price: 0,
         total: 0,
@@ -57,7 +58,7 @@ export function PurchaseFormDialog({
     discount: 0,
     total: 0,
     notes: '',
-    paymentStatus: 'UNPAID',
+    status: 'UNPAID',
     deliveryStatus: 'PENDING',
     attachments: [] as string[],
   });
@@ -66,6 +67,11 @@ export function PurchaseFormDialog({
   const { data: suppliers } = useQuery({
     queryKey: ['suppliers'],
     queryFn: () => api.get('/api/suppliers'),
+  });
+
+  const { data: units } = useQuery({
+    queryKey: ['units'],
+    queryFn: () => api.get('/api/units'),
   });
 
   // Fetch products
@@ -90,6 +96,7 @@ export function PurchaseFormDialog({
         items: [
           {
             materialId: '',
+            unitId: '',
             quantity: 1,
             price: 0,
             total: 0,
@@ -100,7 +107,7 @@ export function PurchaseFormDialog({
         discount: 0,
         total: 0,
         notes: '',
-        paymentStatus: 'UNPAID',
+        status: 'UNPAID',
         deliveryStatus: 'PENDING',
         attachments: [],
       });
@@ -155,6 +162,7 @@ export function PurchaseFormDialog({
         ...formData.items,
         {
           materialId: '',
+          unitId: '',
           quantity: 1,
           price: 0,
           total: 0,
@@ -306,7 +314,7 @@ export function PurchaseFormDialog({
                       )}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={3}>
+                  <Grid item xs={12} sm={2}>
                     <TextField
                       fullWidth
                       type="number"
@@ -322,7 +330,24 @@ export function PurchaseFormDialog({
                       required
                     />
                   </Grid>
-                  <Grid item xs={12} sm={3}>
+                  <Grid item xs={12} sm={2}>
+                    <Autocomplete
+                      fullWidth
+                      options={units?.units || []}
+                      getOptionLabel={(option) => option.name}
+                      value={units?.units.find(
+                        (u: { id: string }) => u.id === item.unitId
+                      )}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="الوحدة"
+                          required
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={2}>
                     <TextField
                       fullWidth
                       type="number"
@@ -413,8 +438,8 @@ export function PurchaseFormDialog({
                 select
                 fullWidth
                 label="حالة الدفع"
-                value={formData.paymentStatus}
-                onChange={handleChange('paymentStatus')}
+                value={formData.status}
+                onChange={handleChange('status')}
                 required
               >
                 <MenuItem value="PAID">مدفوع</MenuItem>
