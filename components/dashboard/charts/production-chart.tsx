@@ -20,7 +20,7 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@mui/material/styles';
-import { DateRangeSelector, DateRange } from '../date-range-selector';
+import { DateRangeSelector, DateRange, formatAxisDate } from '../date-range-selector';
 
 interface ProductionChartProps {
   data: {
@@ -85,6 +85,9 @@ export function ProductionChart({ data, onDateRangeChange, isLoading = false }: 
   // حساب متوسط الإنتاج اليومي
   const averageProduction = !isLoading ? totalProduction / (data.history.length || 1) : 0;
   console.log(data.history)
+
+  const formatXAxis = (date: string) => formatAxisDate(date, dateRange);
+
   return (
     <Card
       component={motion.div}
@@ -173,6 +176,7 @@ export function ProductionChart({ data, onDateRangeChange, isLoading = false }: 
                       dataKey="date"
                       stroke={theme.palette.text.secondary}
                       tick={{ fill: theme.palette.text.secondary }}
+                      tickFormatter={formatXAxis}
                     />
                     <YAxis
                       stroke={theme.palette.text.secondary}

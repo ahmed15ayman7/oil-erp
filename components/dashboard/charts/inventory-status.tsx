@@ -23,7 +23,7 @@ import {
 } from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@mui/material/styles";
-import { DateRangeSelector, DateRange } from "../date-range-selector";
+import { DateRangeSelector, DateRange, formatAxisDate } from "../date-range-selector";
 import { useState } from "react";
 
 interface InventoryStatusProps {
@@ -89,6 +89,8 @@ export function InventoryStatus({ data, onDateRangeChange, isLoading = false }: 
     setCurrentDate(date);
     onDateRangeChange(dateRange, date);
   };
+
+  const formatXAxis = (date: string) => formatAxisDate(date, dateRange);
 
   return (
     <Card
@@ -172,6 +174,7 @@ export function InventoryStatus({ data, onDateRangeChange, isLoading = false }: 
                       dataKey="date"
                       stroke={theme.palette.text.secondary}
                       tick={{ fill: theme.palette.text.secondary }}
+                      tickFormatter={formatXAxis}
                     />
                     <YAxis
                       stroke={theme.palette.text.secondary}

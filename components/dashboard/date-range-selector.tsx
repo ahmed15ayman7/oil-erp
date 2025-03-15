@@ -17,7 +17,27 @@ import {
 import { useState, useEffect } from "react";
 import { format, addDays, subDays, startOfWeek, endOfWeek, addWeeks, subWeeks, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import { ar } from "date-fns/locale";
+import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import 'dayjs/locale/ar';
 
+dayjs.extend(isoWeek);
+dayjs.locale('ar');
+// تغيير تعريف الدالة لتكون مصدرة
+export const formatAxisDate = (date: string, range: DateRange) => {
+  switch (range) {
+    case 'day':
+      return dayjs(date).format('HH:mm');
+    case 'week':
+      return dayjs(date).format('ddd');
+    case 'month':
+      return `أسبوع ${dayjs(date).isoWeek()}`;
+    case 'year':
+      return dayjs(date).format('MMM');
+    default:
+      return date;
+  }
+};
 export type DateRange = "day" | "week" | "month" | "year";
 
 interface DateRangeSelectorProps {

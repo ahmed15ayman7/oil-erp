@@ -22,7 +22,7 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@mui/material/styles';
-import { DateRangeSelector, DateRange } from '../date-range-selector';
+import { DateRangeSelector, DateRange, formatAxisDate } from '../date-range-selector';
 
 interface MaterialsUsageProps {
   data: {
@@ -112,6 +112,8 @@ export function MaterialsUsage({ data, onDateRangeChange, isLoading = false }: M
   // تحويل البيانات للرسم البياني
   const chartData = !isLoading ? data.history : prevData.history;
 
+  const formatXAxis = (date: string) => formatAxisDate(date, dateRange);
+
   return (
     <Card
       component={motion.div}
@@ -175,6 +177,7 @@ export function MaterialsUsage({ data, onDateRangeChange, isLoading = false }: M
                       dataKey="date"
                       stroke={theme.palette.text.secondary}
                       tick={{ fill: theme.palette.text.secondary }}
+                      tickFormatter={formatXAxis}
                     />
                     <YAxis
                       stroke={theme.palette.text.secondary}
