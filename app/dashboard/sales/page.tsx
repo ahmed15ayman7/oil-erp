@@ -88,7 +88,6 @@ export default function SalesPage() {
   const [selectedSale, setSelectedSale] = useState<any>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sales, setSales] = useState([]);
   const [status, setStatus] = useState('');
   const api = useApi();
 
@@ -130,7 +129,7 @@ let statuses = [{id:'UNPAID',name:'غير مدفوعة'},{id:'PAID',name:'مدف
     ];
 
     // إضافة البيانات
-    sales.forEach((sale: Sale & { 
+    data?.sales.forEach((sale: Sale & { 
       items: { 
         productId: string, 
         quantity: number, 
@@ -172,7 +171,7 @@ let statuses = [{id:'UNPAID',name:'غير مدفوعة'},{id:'PAID',name:'مدف
   };
 
   const printPDF = async () => {
-    await generateSalesReport(sales);
+    await generateSalesReport(data?.sales || []);
   };
 
   const handleAdd = () => {
