@@ -158,9 +158,15 @@ export default function TreasuryPage() {
             expenseChange: 0,
           }} />
         )) : (
-          stats && (
+           (
             <Box sx={{ mb: 4 }}>
-              <StatsCards stats={stats} isLoading={false} />
+              <StatsCards stats={stats?stats:{
+                 totalIncome: 0,
+                 totalExpenses: 0,
+                 balance: 0,
+                 incomeChange: 0,
+                 expenseChange: 0,
+              }} isLoading={false} />
             </Box>
           )
         )}
