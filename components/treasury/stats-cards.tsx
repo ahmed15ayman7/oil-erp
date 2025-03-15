@@ -1,4 +1,4 @@
-import { Card, CardContent, Typography, Grid, Box } from '@mui/material';
+import { Card, CardContent, Typography, Grid, Box, Skeleton } from '@mui/material';
 import {
   IconCash,
   IconCashOff,
@@ -14,10 +14,11 @@ interface StatsCardsProps {
     balance: number;
     incomeChange: number;
     expenseChange: number;
-  };
+    };
+  isLoading: boolean;
 }
 
-export function StatsCards({ stats }: StatsCardsProps) {
+export function StatsCards({ stats, isLoading }: StatsCardsProps) {
   const cards = [
     {
       title: 'إجمالي الإيرادات',
@@ -68,10 +69,10 @@ export function StatsCards({ stats }: StatsCardsProps) {
                     variant="subtitle2"
                     sx={{ color: 'text.secondary', mb: 1 }}
                   >
-                    {card.title}
+                   {isLoading ? <Skeleton variant="text" width={100} height={20} /> : card.title}
                   </Typography>
                   <Typography variant="h4" sx={{ mb: 1 }}>
-                    {card.value}
+                    {isLoading ? <Skeleton variant="text" width={100} height={20} /> : card.value}
                   </Typography>
                   {typeof card.change === 'number' && (
                     <Typography
@@ -82,12 +83,12 @@ export function StatsCards({ stats }: StatsCardsProps) {
                         color: card.change >= 0 ? 'success.main' : 'error.main',
                       }}
                     >
-                      {card.change >= 0 ? (
+                      {isLoading ? <Skeleton variant="text" width={100} height={20} /> : card.change >= 0 ? (
                         <IconArrowUpRight size={16} />
                       ) : (
                         <IconArrowDownRight size={16} />
                       )}
-                      {Math.abs(card.change)}% مقارنة بالشهر السابق
+                      {isLoading ? <Skeleton variant="text" width={100} height={20} /> : Math.abs(card.change)}% مقارنة بالشهر السابق
                     </Typography>
                   )}
                 </Box>

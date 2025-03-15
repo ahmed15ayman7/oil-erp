@@ -7,11 +7,12 @@ import { PageHeader } from "@/components/page-header";
 import { Loading } from "@/components/loading";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { SearchInput } from "@/components/search-input";
-import { Box, Chip, FormControl, InputLabel, Select, MenuItem, Grid } from "@mui/material";
+import { Box, Chip, FormControl, InputLabel, Select, MenuItem, Grid, Container } from "@mui/material";
 import { toast } from "react-toastify";
 import { TransactionChart } from "@/components/treasury/transaction-chart";
 import { StatsCards } from "@/components/treasury/stats-cards";
 import dayjs from "dayjs";
+import axios from "axios";
 
 const columns = [
   {
@@ -94,6 +95,14 @@ export default function TreasuryPage() {
     },
   });
 
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ["treasury-stats"],
+    queryFn: async () => {
+      const response = await axios.get("/api/treasury/stats");
+      return response.data;
+    },
+  });
+
   const handleDelete = async (transaction: any) => {
     setSelectedTransaction(transaction);
     setDeleteDialogOpen(true);
@@ -133,14 +142,25 @@ export default function TreasuryPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="الخزينة" />
+    <Container maxWidth="xl">
+      <Box sx={{ mb: 4 }}>
+        <PageHeader title="الخزينة" />
 
-      {isLoading ? (
-        <Loading />
-      ) : (
-        data?.stats && <StatsCards stats={data.stats} />
-      )}
+        {statsLoading ? Array(3).fill(0).map((e, i) => (
+          <StatsCards key={i} isLoading={true} stats={{
+            totalIncome: 0,
+            totalExpenses: 0,
+            balance: 0,
+            incomeChange: 0,
+            expenseChange: 0,
+          }} />
+        )) : (
+          stats && (
+            <Box sx={{ mb: 4 }}>
+              <StatsCards stats={stats} isLoading={false} />
+            </Box>
+          )
+        )}
 
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
@@ -187,56 +207,59 @@ export default function TreasuryPage() {
         </Grid>
       </Grid>
 
-      <Box className="flex gap-4 mb-6">
-        <SearchInput
-          onSearch={setSearchQuery}
-          placeholder="البحث في المعاملات..."
-        />
-        <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel>نوع العملية</InputLabel>
-          <Select
-            value={transactionType}
-            onChange={(e) => setTransactionType(e.target.value)}
-            label="نوع العملية"
-          >
-            <MenuItem value="">الكل</MenuItem>
-            <MenuItem value="SALE_PAYMENT">دفع مبيعات</MenuItem>
-            <MenuItem value="PURCHASE_PAYMENT">دفع مشتريات</MenuItem>
-            <MenuItem value="MAINTENANCE_COST">تكلفة صيانة</MenuItem>
-            <MenuItem value="VEHICLE_EXPENSE">مصاريف مركبات</MenuItem>
-            <MenuItem value="DELIVERY_PAYMENT">مدفوعات توصيل</MenuItem>
-            <MenuItem value="SALARY">رواتب</MenuItem>
-            <MenuItem value="OTHER">أخرى</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
+        <Box sx={{ mt: 4 }}>
+          <Box className="flex gap-4 mb-6">
+            <SearchInput
+              onSearch={setSearchQuery}
+              placeholder="البحث في المعاملات..."
+            />
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>نوع العملية</InputLabel>
+              <Select
+                value={transactionType}
+                onChange={(e) => setTransactionType(e.target.value)}
+                label="نوع العملية"
+              >
+                <MenuItem value="">الكل</MenuItem>
+                <MenuItem value="SALE_PAYMENT">دفع مبيعات</MenuItem>
+                <MenuItem value="PURCHASE_PAYMENT">دفع مشتريات</MenuItem>
+                <MenuItem value="MAINTENANCE_COST">تكلفة صيانة</MenuItem>
+                <MenuItem value="VEHICLE_EXPENSE">مصاريف مركبات</MenuItem>
+                <MenuItem value="DELIVERY_PAYMENT">مدفوعات توصيل</MenuItem>
+                <MenuItem value="SALARY">رواتب</MenuItem>
+                <MenuItem value="OTHER">أخرى</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
 
-      {isLoading ? (
-        <Loading />
-      ) : (
-        data && (
-          <DataTable
-            columns={columns}
-            data={data?.transactions || []}
-            loading={isLoading}
-            page={page}
-            totalCount={data?.total || 0}
-            rowsPerPage={rowsPerPage}
-            onPageChange={setPage}
-            onRowsPerPageChange={setRowsPerPage}
-            onDelete={handleDelete}
-          />
-        )
-      )}
+          {isLoading ? (
+            <Loading />
+          ) : (
+            data && (
+              <DataTable
+                columns={columns}
+                data={data?.transactions || []}
+                loading={isLoading}
+                page={page}
+                totalCount={data?.total || 0}
+                rowsPerPage={rowsPerPage}
+                onPageChange={setPage}
+                onRowsPerPageChange={setRowsPerPage}
+                onDelete={handleDelete}
+              />
+            )
+          )}
+        </Box>
+      </Box>
 
       <ConfirmDialog
         open={deleteDialogOpen}
         title="حذف العملية"
-        message={`هل أنت متأكد من حذف هذه العملية؟ سيتم إلغاء جميع الإجراءات المرتبطة بها.`}
+        message="هل أنت متأكد من حذف هذه العملية؟ سيتم إلغاء جميع الإجراءات المرتبطة بها."
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteDialogOpen(false)}
         loading={formLoading}
       />
-    </div>
+    </Container>
   );
 }

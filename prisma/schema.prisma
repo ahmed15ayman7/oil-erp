@@ -64,7 +64,6 @@ model Product {
   status            ProductStatus   @default(IN_STOCK)
   location          String?         // Storage location in warehouse
   isActive          Boolean         @default(true)
-  purchaseItems     PurchaseItem[]
   saleItems         SaleItem[]
   stockMovements    StockMovement[]
   productions       Production[]    // إضافة العلاقة مع سجلات الإنتاج
@@ -257,8 +256,8 @@ model PurchaseItem {
   id          String    @id @default(cuid()) @map("_id")
   purchaseId  String
   purchase    Purchase  @relation(fields: [purchaseId], references: [id])
-  productId   String
-  product     Product   @relation(fields: [productId], references: [id])
+  materialId   String
+  material     Material   @relation(fields: [materialId], references: [id])
   quantity    Float
   price       Float
   total       Float
@@ -534,10 +533,13 @@ model Material {
   location    String?     // موقع التخزين
   supplier    String?     // المورد
   notes       String?     // ملاحظات
+  lastPurchasePrice Float?    // سعر الشراء الأخير
   transactions MaterialTransaction[] // سجل المعاملات
   productions Production[]  // إضافة العلاقة مع سجلات الإنتاج
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+
+  PurchaseItem PurchaseItem[]
 }
 
 model MaterialTransaction {

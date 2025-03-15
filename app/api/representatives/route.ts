@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       representatives,
       total: totalSearch,
       stats: {
-        total,
+      total,
         active,
         onLeave,
         inactive,

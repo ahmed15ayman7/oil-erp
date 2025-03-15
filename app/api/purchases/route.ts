@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
           supplier: true,
           items: {
             include: {
-              product: true,
+              material: true,
             },
           },
           user: {
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           items: {
             create: items.map((item: any) => ({
-              productId: item.productId,
+              materialId: item.materialId,
               quantity: item.quantity,
               price: item.price,
               total: item.total,
@@ -127,8 +127,8 @@ export async function POST(request: NextRequest) {
 
       // 2. تحديث المخزون
       for (const item of items) {
-        await tx.product.update({
-          where: { id: item.productId },
+        await tx.material.update({
+          where: { id: item.materialId },
           data: {
             quantity: {
               increment: item.quantity,
@@ -138,15 +138,15 @@ export async function POST(request: NextRequest) {
         });
 
         // إنشاء حركة مخزون
-        await tx.stockMovement.create({
-          data: {
-            productId: item.productId,
-            type: "PURCHASE",
-            quantity: item.quantity,
-            reference: invoiceNumber,
-            userId: session.user.id,
-          },
-        });
+        // await tx.stockMovement.create({
+        //   data: {
+        //     materialId: item.materialId,
+        //     type: "PURCHASE",
+        //     quantity: item.quantity,
+        //     reference: invoiceNumber,
+        //     userId: session.user.id,
+        //   },
+        // });
       }
 
       // 3. إنشاء معاملة مالية في الخزينة
@@ -200,8 +200,8 @@ export async function PUT(request: NextRequest) {
     // Restore old quantities
     await Promise.all(
       purchase.items.map((item) =>
-        prisma.product.update({
-          where: { id: item.productId },
+        prisma.material.update({
+          where: { id: item.materialId },
           data: {
             quantity: {
               decrement: item.quantity,
@@ -254,7 +254,7 @@ export async function PUT(request: NextRequest) {
           supplier: true,
           items: {
             include: {
-              product: true,
+              material: true,
             },
           },
           user: {
@@ -310,7 +310,7 @@ export async function PATCH(request: NextRequest) {
         supplier: true,
         items: {
           include: {
-            product: true,
+            material: true,
           },
         },
         user: {
@@ -329,7 +329,7 @@ export async function PATCH(request: NextRequest) {
       'التاريخ': new Date(purchase.date).toLocaleDateString('ar-EG'),
       'تاريخ الاستحقاق': purchase.dueDate ? new Date(purchase.dueDate).toLocaleDateString('ar-EG') : '',
       'المورد': purchase.supplier.name,
-      'المنتجات': purchase.items.map(item => `${item.product.name} (${item.quantity})`).join(', '),
+      'المواد': purchase.items.map(item => `${item.material.name} (${item.quantity})`).join(', '),
       'إجمالي المنتجات': purchase.subtotal.toLocaleString('ar-EG'),
       'الضريبة': purchase.tax.toLocaleString('ar-EG'),
       'الخصم': purchase.discount.toLocaleString('ar-EG'),
@@ -392,8 +392,8 @@ export async function DELETE(request: NextRequest) {
       });
 
       for (const item of purchaseItems) {
-        await tx.product.update({
-          where: { id: item.productId },
+        await tx.material.update({
+          where: { id: item.materialId },
           data: {
             quantity: {
               decrement: item.quantity,
@@ -402,15 +402,15 @@ export async function DELETE(request: NextRequest) {
         });
 
         // إنشاء حركة مخزون عكسية
-        await tx.stockMovement.create({
-          data: {
-            productId: item.productId,
-            type: "RETURN",
-            quantity: -item.quantity,
-            reference: `RETURN-${id}`,
-            userId: session.user.id,
-          },
-        });
+        // await tx.stockMovement.create({
+        //   data: {
+        //     materialId: item.materialId,
+        //     type: "RETURN",
+        //     quantity: -item.quantity,
+        //     reference: `RETURN-${id}`,
+        //     userId: session.user.id,
+        //   },
+        // });
       }
 
       // 3. حذف الفاتورة

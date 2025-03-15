@@ -46,7 +46,7 @@ export function PurchaseFormDialog({
     dueDate: null as dayjs.Dayjs | null,
     items: [
       {
-        productId: '',
+        materialId: '',
         quantity: 1,
         price: 0,
         total: 0,
@@ -69,9 +69,9 @@ export function PurchaseFormDialog({
   });
 
   // Fetch products
-  const { data: products } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => api.get('/api/products'),
+  const { data: materials } = useQuery({
+    queryKey: ['materials'],
+    queryFn: () => api.get('/api/materials'),
   });
 
   useEffect(() => {
@@ -89,7 +89,7 @@ export function PurchaseFormDialog({
         dueDate: null,
         items: [
           {
-            productId: '',
+            materialId: '',
             quantity: 1,
             price: 0,
             total: 0,
@@ -125,12 +125,12 @@ export function PurchaseFormDialog({
     };
 
     // Update price if product changes
-    if (field === 'productId') {
-      const product = products?.products.find(
+    if (field === 'materialId') {
+      const material = materials?.materials.find(
         (p: { id: string }) => p.id === value
       );
-      if (product) {
-        items[index].price = product.price;
+      if (material) {
+        items[index].price = material.price;
       }
     }
 
@@ -154,7 +154,7 @@ export function PurchaseFormDialog({
       items: [
         ...formData.items,
         {
-          productId: '',
+          materialId: '',
           quantity: 1,
           price: 0,
           total: 0,
@@ -283,24 +283,24 @@ export function PurchaseFormDialog({
                   <Grid item xs={12} sm={4}>
                     <Autocomplete
                       fullWidth
-                      options={products?.products || []}
+                      options={materials?.materials || []}
                       getOptionLabel={(option) => option.name}
                       value={
-                        products?.products.find(
-                          (p: { id: string }) => p.id === item.productId
+                        materials?.materials.find(
+                          (p: { id: string }) => p.id === item.materialId
                         ) || null
                       }
                       onChange={(_, newValue) =>
                         handleItemChange(
                           index,
-                          'productId',
+                          'materialId',
                           newValue?.id || ''
                         )
                       }
                       renderInput={(params) => (
                         <TextField
                           {...params}
-                          label="المنتج"
+                          label="المواد"
                           required
                         />
                       )}
@@ -361,7 +361,7 @@ export function PurchaseFormDialog({
                 onClick={handleAddItem}
                 className="mt-2"
               >
-                إضافة منتج
+                إضافة مواد
               </Button>
             </Grid>
 

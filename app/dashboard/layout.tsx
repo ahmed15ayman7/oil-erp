@@ -96,7 +96,7 @@ const menuItems = [
   },
   {
     title: "النقل",
-    path: "/dashboard/transport",
+    path: "/dashboard/vehicles",
     icon: <IconTruckDelivery />,
   },
   {

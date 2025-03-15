@@ -24,9 +24,11 @@ import {
   IconFileExport, 
   IconReportMoney,
   IconPrinter,
+  IconTool,
 } from '@tabler/icons-react';
 import { exportToExcel } from '@/lib/excel';
 import { generateVehicleReport } from '@/lib/pdf';
+import { MaintenanceFormDialog } from '@/components/transport/maintenance-form-dialog';
 
 const columns = [
   {
@@ -87,6 +89,9 @@ export default function VehiclesPage() {
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const api = useApi();
+  const [maintenanceFormOpen, setMaintenanceFormOpen] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
+
 
   // Fetch vehicles
   const {
@@ -144,7 +149,25 @@ export default function VehiclesPage() {
     }
   };
 
-
+  const handleMaintenanceSubmit = async (formData: any) => {
+    setFormLoading(true);
+    try {
+      await api.post('/api/maintenance', {
+        ...formData,
+        vehicleId: selectedVehicle.id,
+      }, {
+        successMessage: 'تم إضافة سجل الصيانة بنجاح',
+      });
+      setMaintenanceFormOpen(false);
+      refetchVehicles();
+    } finally {
+      setFormLoading(false);
+    }
+  };
+  const handleAddMaintenance = (vehicle: any) => {
+    setSelectedVehicle(vehicle);
+    setMaintenanceFormOpen(true);
+  };
   return (
     <div className="space-y-6">
       <PageHeader
@@ -175,7 +198,6 @@ export default function VehiclesPage() {
           </div>
         }
       />
-
       <Box className="mb-6">
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={8}>
@@ -200,7 +222,15 @@ export default function VehiclesPage() {
           </Grid>
         </Grid>
       </Box>
-
+      {isLoading ? <Loading /> : selectedVehicle && (
+        <MaintenanceFormDialog
+          open={maintenanceFormOpen}
+          onClose={() => setMaintenanceFormOpen(false)}
+          onSubmit={handleMaintenanceSubmit}
+          vehicle={selectedVehicle}
+        loading={formLoading}
+      />
+      )}
       {isLoading ? (
         <Loading />
       ) : data && (
@@ -220,7 +250,13 @@ export default function VehiclesPage() {
             label: 'إضافة مصروف',
             onClick: handleAddExpense,
           },
-        ]}
+          
+            {
+              icon: <IconTool />,
+              label: 'إضافة صيانة',
+              onClick: handleAddMaintenance,
+            },
+          ]}
       />
       )}
 
