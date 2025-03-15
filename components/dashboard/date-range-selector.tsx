@@ -17,14 +17,15 @@ import {
 import { useState, useEffect } from "react";
 import { format, addDays, subDays, startOfWeek, endOfWeek, addWeeks, subWeeks, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import { ar } from "date-fns/locale";
+import dayjs from "dayjs";
 
 export type DateRange = "day" | "week" | "month" | "year";
 
 interface DateRangeSelectorProps {
   range: DateRange;
   onRangeChange: (range: DateRange) => void;
-  onDateChange: (date: Date) => void;
-  currentDate: Date;
+  onDateChange: (date: dayjs.Dayjs) => void;
+  currentDate: dayjs.Dayjs;
 }
 
 export function DateRangeSelector({
@@ -42,7 +43,7 @@ export function DateRangeSelector({
     if (newRange) {
       onRangeChange(newRange);
       // تحديث التاريخ عند تغيير النطاق
-      let newDate = new Date(currentDate);
+      let newDate = new Date(currentDate.toDate());
       switch (newRange) {
         case "day":
           newDate = new Date(); // اليوم الحالي
@@ -57,12 +58,12 @@ export function DateRangeSelector({
           newDate = startOfYear(new Date()); // بداية السنة الحالية
           break;
       }
-      onDateChange(newDate);
+      onDateChange(dayjs(newDate));
     }
   };
 
   const handlePrevious = () => {
-    const newDate = new Date(currentDate);
+    const newDate = new Date(currentDate.toDate());
     switch (range) {
       case "day":
         newDate.setDate(newDate.getDate() - 1);
@@ -77,11 +78,11 @@ export function DateRangeSelector({
         newDate.setFullYear(newDate.getFullYear() - 1);
         break;
     }
-    onDateChange(newDate);
+    onDateChange(dayjs(newDate));
   };
 
   const handleNext = () => {
-    const newDate = new Date(currentDate);
+    const newDate = new Date(currentDate.toDate());
     const today = new Date();
     let canAdvance = true;
 
@@ -105,7 +106,7 @@ export function DateRangeSelector({
     }
 
     if (canAdvance) {
-      onDateChange(newDate);
+      onDateChange(dayjs(newDate));
     }
   };
 
@@ -135,7 +136,7 @@ export function DateRangeSelector({
         newDate = subYears(newDate, 1);
         break;
     }
-    onDateChange(newDate);
+    onDateChange(dayjs(newDate));
     handleMenuClose();
   };
 
@@ -148,19 +149,19 @@ export function DateRangeSelector({
 
     switch (range) {
       case "day":
-        return format(currentDate, "dd MMMM yyyy", { locale: ar });
+        return format(currentDate.toDate(), "dd MMMM yyyy", { locale: ar });
       case "week":
-        const weekStart = startOfWeek(currentDate, { locale: ar });
-        const weekEnd = endOfWeek(currentDate, { locale: ar });
-        return `${format(weekStart, "dd", { locale: ar })} - ${format(
-          weekEnd,
+        const weekStart = currentDate.startOf("week");
+        const weekEnd = currentDate.endOf("week");
+        return `${format(weekStart.toDate(), "dd", { locale: ar })} - ${format(
+          weekEnd.toDate(),
           "dd MMMM yyyy",
           { locale: ar }
         )}`;
       case "month":
-        return format(currentDate, "MMMM yyyy", { locale: ar });
+        return format(currentDate.toDate(), "MMMM yyyy", { locale: ar });
       case "year":
-        return format(currentDate, "yyyy", { locale: ar });
+        return format(currentDate.toDate(), "yyyy", { locale: ar });
     }
   };
 
@@ -173,7 +174,7 @@ export function DateRangeSelector({
         size="small"
       >
         <ToggleButton value="day">يوم</ToggleButton>
-        <ToggleButton value="week">أسبوع</ToggleButton>
+        {/* <ToggleButton value="week">أسبوع</ToggleButton> */}
         <ToggleButton value="month">شهر</ToggleButton>
         <ToggleButton value="year">سنة</ToggleButton>
       </ToggleButtonGroup>
@@ -223,7 +224,7 @@ export function DateRangeSelector({
           onClick={handleNext}
           size="small"
           disabled={
-            new Date(currentDate).setHours(0, 0, 0, 0) >=
+            new Date(currentDate.toDate()).setHours(0, 0, 0, 0) >=
             new Date().setHours(0, 0, 0, 0)
           }
         >

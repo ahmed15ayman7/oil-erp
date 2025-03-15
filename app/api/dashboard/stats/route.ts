@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/auth';
-import { addDays, startOfDay, endOfDay, subDays, format, subMonths, subYears ,Locale, addHours, addWeeks, addMonths} from 'date-fns';
+import { addDays, startOfDay, endOfDay, subDays, format, subMonths, subYears ,Locale, addHours, addWeeks, addMonths, startOfMonth, endOfMonth, startOfYear, endOfYear} from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 // دالة مساعدة للحصول على نطاق التاريخ
@@ -31,20 +31,20 @@ function getDateRange(range: string, date: string) {
       previousEndDate = subDays(startDate, 1);
       break;
     case 'month':
-      interval = 'week';
-      timeFormat = "'أسبوع' w, MMM";
-      startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-      previousStartDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
-      previousEndDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
+      interval = 'day';
+      timeFormat = "dd MMM";
+      startDate = startOfMonth(currentDate);
+      endDate = endOfMonth(currentDate);
+      previousStartDate = subMonths(startDate, 1);
+      previousEndDate = subDays(startDate, 1);
       break;
     case 'year':
       interval = 'month';
       timeFormat = 'MMM yyyy';
-      startDate = new Date(currentDate.getFullYear(), 0, 1);
-      endDate = new Date(currentDate.getFullYear(), 11, 31);
-      previousStartDate = new Date(currentDate.getFullYear() - 1, 0, 1);
-      previousEndDate = new Date(currentDate.getFullYear() - 1, 11, 31);
+      startDate = startOfYear(currentDate);
+      endDate = endOfYear(currentDate);
+      previousStartDate = subYears(startDate, 1);
+      previousEndDate = subYears(endDate, 1);
       break;
   }
 
@@ -59,7 +59,7 @@ function getDateFormat(interval: string, locale: Locale = ar): string {
     case 'day':
       return 'dd MMM';
     case 'week':
-      return "'أسبوع' w, MMM";
+      return "dd MMM";
     case 'month':
       return 'MMM yyyy';
     default:
@@ -145,7 +145,7 @@ export async function GET(request: Request) {
     const dateFormat = getDateFormat(interval);
 
     let response: any = {};
-
+    console.log(startDate, endDate, previousStartDate, previousEndDate, interval, dateFormat);
     switch (type) {
       case 'sales':
         const salesData = await getSalesAnalytics(startDate!, endDate!, previousStartDate!, previousEndDate!, interval, dateFormat);

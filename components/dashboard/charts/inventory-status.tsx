@@ -26,6 +26,7 @@ import { useTheme } from "@mui/material/styles";
 import { DateRangeSelector, DateRange } from "../date-range-selector";
 import { useState } from "react";
 import dayjs from 'dayjs';
+
 import { useQueryClient } from '@tanstack/react-query';
 
 interface InventoryStatusProps {
@@ -45,7 +46,7 @@ interface InventoryStatusProps {
       minQuantity: number;
     }[];
   };
-  onDateRangeChange: (range: DateRange, date: Date) => void;
+  onDateRangeChange: (range: DateRange, date: dayjs.Dayjs, type: string) => void;
   isLoading?: boolean;
 }
 
@@ -78,7 +79,7 @@ export function InventoryStatus({ data, onDateRangeChange, isLoading = false }: 
   const theme = useTheme();
   const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState<DateRange>("day");
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(dayjs());
   const [isChangingRange, setIsChangingRange] = useState(false);
 
   const handleRangeChange = (range: DateRange) => {
@@ -89,7 +90,7 @@ export function InventoryStatus({ data, onDateRangeChange, isLoading = false }: 
     const cachedData = queryClient.getQueryData(["dashboardStats", "inventory", range, currentDate]);
 
     if (!cachedData) {
-      onDateRangeChange(range, currentDate);
+      onDateRangeChange(range, currentDate, 'inventory');
     } else {
       // استخدام البيانات المخزنة مؤقتاً
       queryClient.setQueryData(["dashboardStats", "inventory", range, currentDate], cachedData);
@@ -98,25 +99,9 @@ export function InventoryStatus({ data, onDateRangeChange, isLoading = false }: 
     setTimeout(() => setIsChangingRange(false), 500);
   };
 
-  const handleDateChange = (date: Date) => {
+  const handleDateChange = (date: dayjs.Dayjs) => {
     setCurrentDate(date);
-    onDateRangeChange(dateRange, date);
-  };
-
-  // تنسيق محور X حسب نطاق التاريخ
-  const formatXAxis = (value: string) => {
-    switch (dateRange) {
-      case 'day':
-        return dayjs(value).format('HH:mm');
-      case 'week':
-        return dayjs(value).format('ddd');
-      case 'month':
-        return `أسبوع ${dayjs(value).isoWeek()}`;
-      case 'year':
-        return dayjs(value).format('MMM');
-      default:
-        return value;
-    }
+    onDateRangeChange(dateRange, date, 'inventory');
   };
 
   return (
@@ -201,7 +186,7 @@ export function InventoryStatus({ data, onDateRangeChange, isLoading = false }: 
                       dataKey="date"
                       stroke={theme.palette.text.secondary}
                       tick={{ fill: theme.palette.text.secondary }}
-                      tickFormatter={formatXAxis}
+                      
                     />
                     <YAxis
                       stroke={theme.palette.text.secondary}
@@ -212,7 +197,7 @@ export function InventoryStatus({ data, onDateRangeChange, isLoading = false }: 
                         backgroundColor: theme.palette.background.paper,
                         border: `1px solid ${theme.palette.divider}`,
                       }}
-                      labelFormatter={formatXAxis}
+                  
                       formatter={(value: number) => [value.toLocaleString(), ""]}
                       labelStyle={{ color: theme.palette.text.primary }}
                     />

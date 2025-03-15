@@ -17,6 +17,7 @@ import { LoadingOverlay } from "@/components/loading-overlay";
 import { DateRange } from "@/components/dashboard/date-range-selector";
 import { IconPackage, IconReportMoney, IconUsers } from "@tabler/icons-react";
 import { StatsCard } from "@/components/stats-card";
+import dayjs from "dayjs";
 
 const container = {
   hidden: { opacity: 0 },
@@ -39,8 +40,9 @@ export default function DashboardPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
-  const [dateRange, setDateRange] = useState<DateRange>("week");
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [dateRange, setDateRange] = useState<DateRange>("day");
+  const [currentDate, setCurrentDate] = useState(dayjs());
+  const [type,setType]=useState<"sales" | "inventory" | "production">("sales")
 
   // استخدام React Query لجلب البيانات الأساسية
   const { data: basicStats, isLoading: basicStatsLoading } = useQuery({
@@ -51,7 +53,7 @@ export default function DashboardPage() {
   });
 
   // جلب بيانات المبيعات
-  const { data: salesData, isLoading: salesLoading } = useQuery({
+  const { data: salesData, isLoading: salesLoading,refetch: refetchSales } = useQuery({
     queryKey: ["dashboardSales", dateRange, currentDate],
     queryFn: () =>
       fetch(`/api/dashboard/stats?type=sales&range=${dateRange}&date=${currentDate.toISOString()}`).then((res) => res.json()),
@@ -60,7 +62,7 @@ export default function DashboardPage() {
   });
 
   // جلب بيانات المخزون
-  const { data: inventoryData, isLoading: inventoryLoading } = useQuery({
+  const { data: inventoryData, isLoading: inventoryLoading ,refetch: refetchInventory} = useQuery({
     queryKey: ["dashboardInventory", dateRange, currentDate],
     queryFn: () =>
       fetch(`/api/dashboard/stats?type=inventory&range=${dateRange}&date=${currentDate.toISOString()}`).then((res) => res.json()),
@@ -69,7 +71,7 @@ export default function DashboardPage() {
   });
 
   // جلب بيانات الإنتاج
-  const { data: productionData, isLoading: productionLoading } = useQuery({
+  const { data: productionData, isLoading: productionLoading,refetch: refetchProduction } = useQuery({
     queryKey: ["dashboardProduction", dateRange, currentDate],
     queryFn: () =>
       fetch(`/api/dashboard/stats?type=production&range=${dateRange}&date=${currentDate.toISOString()}`).then((res) => res.json()),
@@ -89,7 +91,15 @@ export default function DashboardPage() {
     queryFn: () => fetch("/api/units").then((res) => res.json()),
     staleTime: 5 * 60 * 1000,
   });
-
+  useEffect(() => {
+    if (type === 'sales') {
+      refetchSales();
+    } else if (type === 'inventory') {
+      refetchInventory();
+    } else if (type === 'production') {
+      refetchProduction();
+    }
+  }, [type, dateRange, currentDate]);
   // إعداد WebSocket للتحديثات المباشرة
   useWebSocket({
     url: process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3000/api/websocket",
@@ -108,9 +118,11 @@ export default function DashboardPage() {
     },
   });
 
-  const handleDateRangeChange = (range: DateRange, date: Date) => {
+  const handleDateRangeChange = (range: DateRange, date: dayjs.Dayjs,type: string) => {
     setDateRange(range);
     setCurrentDate(date);
+    setType(type as "sales" | "inventory" | "production");
+
   };
 
   const isBasicLoading = basicStatsLoading;
@@ -141,7 +153,6 @@ export default function DashboardPage() {
       isLoading: isBasicLoading,
     },
   ];
-
   return (
     <AnimatePresence>
       <motion.div

@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@mui/material/styles';
 import { DateRangeSelector, DateRange } from '../date-range-selector';
 import dayjs from 'dayjs';
+
 import { useQueryClient } from '@tanstack/react-query';
 
 interface ProductionChartProps {
@@ -31,7 +32,7 @@ interface ProductionChartProps {
       quantity: number;
     }[];
   };
-  onDateRangeChange: (range: DateRange, date: Date) => void;
+  onDateRangeChange: (range: DateRange, date: dayjs.Dayjs, type: string) => void;
   isLoading?: boolean;
 }
 
@@ -64,7 +65,7 @@ export function ProductionChart({ data, onDateRangeChange, isLoading = false }: 
   const theme = useTheme();
   const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState<DateRange>('day');
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(dayjs());
   const [isChangingRange, setIsChangingRange] = useState(false);
 
   const handleRangeChange = (range: DateRange) => {
@@ -75,7 +76,7 @@ export function ProductionChart({ data, onDateRangeChange, isLoading = false }: 
     const cachedData = queryClient.getQueryData(["dashboardStats", "production", range, currentDate]);
 
     if (!cachedData) {
-      onDateRangeChange(range, currentDate);
+      onDateRangeChange(range, currentDate, 'production');
     } else {
       // استخدام البيانات المخزنة مؤقتاً
       queryClient.setQueryData(["dashboardStats", "production", range, currentDate], cachedData);
@@ -84,26 +85,11 @@ export function ProductionChart({ data, onDateRangeChange, isLoading = false }: 
     setTimeout(() => setIsChangingRange(false), 500);
   };
 
-  const handleDateChange = (date: Date) => {
+  const handleDateChange = (date: dayjs.Dayjs) => {
     setCurrentDate(date);
-    onDateRangeChange(dateRange, date);
+    onDateRangeChange(dateRange, date, 'production');
   };
 
-  // تنسيق محور X حسب نطاق التاريخ
-  const formatXAxis = (value: string) => {
-    switch (dateRange) {
-      case 'day':
-        return dayjs(value).format('HH:mm');
-      case 'week':
-        return dayjs(value).format('ddd');
-      case 'month':
-        return `أسبوع ${dayjs(value).isoWeek()}`;
-      case 'year':
-        return dayjs(value).format('MMM');
-      default:
-        return value;
-    }
-  };
 
   // حساب إجمالي الإنتاج للفترة المحددة
   const totalProduction = !isLoading ? data.history.reduce(
@@ -202,7 +188,6 @@ export function ProductionChart({ data, onDateRangeChange, isLoading = false }: 
                       dataKey="date"
                       stroke={theme.palette.text.secondary}
                       tick={{ fill: theme.palette.text.secondary }}
-                      tickFormatter={formatXAxis}
                     />
                     <YAxis
                       stroke={theme.palette.text.secondary}
@@ -213,7 +198,7 @@ export function ProductionChart({ data, onDateRangeChange, isLoading = false }: 
                         backgroundColor: theme.palette.background.paper,
                         border: `1px solid ${theme.palette.divider}`,
                       }}
-                      labelFormatter={formatXAxis}
+                    
                       formatter={(value: number) => [value.toLocaleString(), "الكمية"]}
                       labelStyle={{ color: theme.palette.text.primary }}
                     />
