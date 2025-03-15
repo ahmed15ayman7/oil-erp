@@ -12,7 +12,8 @@ import { toast } from "react-toastify";
 import { TransactionChart } from "@/components/treasury/transaction-chart";
 import { StatsCards } from "@/components/treasury/stats-cards";
 import dayjs from "dayjs";
-import axios from "axios";
+import { useApi } from "@/hooks/use-api";
+const api = useApi();
 
 const columns = [
   {
@@ -100,7 +101,7 @@ export default function TreasuryPage() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["treasury-stats"],
     queryFn: async () => {
-      const response = await axios.get("/api/treasury/stats");
+      const response = await api.get("/api/treasury/stats");
       return response.data;
     },
   });
