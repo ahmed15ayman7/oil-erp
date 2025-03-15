@@ -45,7 +45,7 @@ const columns = [
         style: "currency",
         currency: "EGP",
       }),
-    },
+  },
   {
     id: "reference",
     label: "رقم المرجع",
@@ -118,7 +118,7 @@ export default function TreasuryPage() {
       const response = await fetch(`/api/treasury/${selectedTransaction.id}`, {
         method: "DELETE",
       });
-      
+
       if (!response.ok) {
         throw new Error("حدث خطأ أثناء حذف العملية");
       }
@@ -149,7 +149,7 @@ export default function TreasuryPage() {
       <Box sx={{ mb: 4 }}>
         <PageHeader title="الخزينة" />
 
-        {statsLoading ? Array(3).fill(0).map((e, i) => (
+        {statsLoading ? Array(3).map((e, i) => (
           <StatsCards key={i} isLoading={true} stats={{
             totalIncome: 0,
             totalExpenses: 0,
@@ -158,63 +158,63 @@ export default function TreasuryPage() {
             expenseChange: 0,
           }} />
         )) : (
-           (
+          (
             <Box sx={{ mb: 4 }}>
-              <StatsCards stats={stats?stats:{
-                 totalIncome: 0,
-                 totalExpenses: 0,
-                 balance: 0,
-                 incomeChange: 0,
-                 expenseChange: 0,
+              <StatsCards stats={stats ? stats : {
+                totalIncome: 0,
+                totalExpenses: 0,
+                balance: 0,
+                incomeChange: 0,
+                expenseChange: 0,
               }} isLoading={false} />
             </Box>
           )
         )}
 
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
-          <TransactionChart
-            title="المبيعات"
-            type="SALE_PAYMENT"
-            color="#4caf50"
-          />
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <TransactionChart
+              title="المبيعات"
+              type="SALE_PAYMENT"
+              color="#4caf50"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TransactionChart
+              title="المشتريات"
+              type="PURCHASE_PAYMENT"
+              color="#f44336"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TransactionChart
+              title="مصاريف الصيانة"
+              type="MAINTENANCE_COST"
+              color="#ff9800"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TransactionChart
+              title="مصاريف النقل"
+              type="VEHICLE_EXPENSE"
+              color="#2196f3"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TransactionChart
+              title="مدفوعات التوصيل"
+              type="DELIVERY_PAYMENT"
+              color="#9c27b0"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TransactionChart
+              title="الرواتب"
+              type="SALARY"
+              color="#795548"
+            />
+          </Grid>
         </Grid>
-        <Grid item xs={12} md={6}>
-          <TransactionChart
-            title="المشتريات"
-            type="PURCHASE_PAYMENT"
-            color="#f44336"
-          />
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <TransactionChart
-            title="مصاريف الصيانة"
-            type="MAINTENANCE_COST"
-            color="#ff9800"
-          />
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <TransactionChart
-            title="مصاريف النقل"
-            type="VEHICLE_EXPENSE"
-            color="#2196f3"
-          />
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <TransactionChart
-            title="مدفوعات التوصيل"
-            type="DELIVERY_PAYMENT"
-            color="#9c27b0"
-          />
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <TransactionChart
-            title="الرواتب"
-            type="SALARY"
-            color="#795548"
-          />
-        </Grid>
-      </Grid>
 
         <Box sx={{ mt: 4 }}>
           <Box className="flex gap-4 mb-6">
