@@ -22,7 +22,9 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@mui/material/styles';
-import { DateRangeSelector, DateRange, formatAxisDate } from '../date-range-selector';
+import { DateRangeSelector, DateRange } from '../date-range-selector';
+import dayjs from 'dayjs';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface MaterialsUsageProps {
   data: {
@@ -90,6 +92,7 @@ const ChartLoadingAnimation = () => {
 
 export function MaterialsUsage({ data, onDateRangeChange, isLoading = false }: MaterialsUsageProps) {
   const theme = useTheme();
+  const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState<DateRange>("day");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isChangingRange, setIsChangingRange] = useState(false);
@@ -99,7 +102,17 @@ export function MaterialsUsage({ data, onDateRangeChange, isLoading = false }: M
     setIsChangingRange(true);
     setDateRange(range);
     setPrevData(data);
-    onDateRangeChange(range, currentDate);
+
+    // التحقق من وجود البيانات في التخزين المؤقت
+    const cachedData = queryClient.getQueryData(["dashboardStats", "materials", range, currentDate]);
+
+    if (!cachedData) {
+      onDateRangeChange(range, currentDate);
+    } else {
+      // استخدام البيانات المخزنة مؤقتاً
+      queryClient.setQueryData(["dashboardStats", "materials", range, currentDate], cachedData);
+    }
+
     setTimeout(() => setIsChangingRange(false), 500);
   };
 
@@ -109,10 +122,24 @@ export function MaterialsUsage({ data, onDateRangeChange, isLoading = false }: M
     onDateRangeChange(dateRange, date);
   };
 
+  // تنسيق محور X حسب نطاق التاريخ
+  const formatXAxis = (value: string) => {
+    switch (dateRange) {
+      case 'day':
+        return dayjs(value).format('HH:mm');
+      case 'week':
+        return dayjs(value).format('ddd');
+      case 'month':
+        return `أسبوع ${dayjs(value).isoWeek()}`;
+      case 'year':
+        return dayjs(value).format('MMM');
+      default:
+        return value;
+    }
+  };
+
   // تحويل البيانات للرسم البياني
   const chartData = !isLoading ? data.history : prevData.history;
-
-  const formatXAxis = (date: string) => formatAxisDate(date, dateRange);
 
   return (
     <Card
@@ -188,6 +215,7 @@ export function MaterialsUsage({ data, onDateRangeChange, isLoading = false }: M
                         backgroundColor: theme.palette.background.paper,
                         border: `1px solid ${theme.palette.divider}`,
                       }}
+                      labelFormatter={formatXAxis}
                       formatter={(value: number, name: string, props: any) => {
                         const material = props.payload.materials.find(
                           (m: any) => materialTypes[m.type as keyof typeof materialTypes] === name

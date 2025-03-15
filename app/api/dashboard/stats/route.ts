@@ -12,10 +12,12 @@ function getDateRange(range: string, date: string) {
   let previousStartDate;
   let previousEndDate;
   let interval: 'hour' | 'day' | 'week' | 'month' = 'day';
+  let timeFormat: string="dd MMM";
 
   switch (range) {
     case 'day':
       interval = 'hour';
+      timeFormat = 'HH:mm';
       startDate = startOfDay(currentDate);
       endDate = endOfDay(currentDate);
       previousStartDate = subDays(startDate, 1);
@@ -23,12 +25,14 @@ function getDateRange(range: string, date: string) {
       break;
     case 'week':
       interval = 'day';
+      timeFormat = 'dd MMM';
       startDate = subDays(startDate, 6);
       previousStartDate = subDays(startDate, 7);
       previousEndDate = subDays(startDate, 1);
       break;
     case 'month':
       interval = 'week';
+      timeFormat = "'أسبوع' w, MMM";
       startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
       previousStartDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
@@ -36,6 +40,7 @@ function getDateRange(range: string, date: string) {
       break;
     case 'year':
       interval = 'month';
+      timeFormat = 'MMM yyyy';
       startDate = new Date(currentDate.getFullYear(), 0, 1);
       endDate = new Date(currentDate.getFullYear(), 11, 31);
       previousStartDate = new Date(currentDate.getFullYear() - 1, 0, 1);
@@ -43,7 +48,7 @@ function getDateRange(range: string, date: string) {
       break;
   }
 
-  return { startDate, endDate, previousStartDate, previousEndDate, interval };
+  return { startDate, endDate, previousStartDate, previousEndDate, interval, timeFormat };
 }
 
 // دالة للحصول على تنسيق التاريخ المناسب حسب النطاق
@@ -136,7 +141,7 @@ export async function GET(request: Request) {
     const date = searchParams.get('date') || new Date().toISOString();
     const type = searchParams.get('type') || 'all';
 
-    const { startDate, endDate, previousStartDate, previousEndDate, interval } = getDateRange(range, date);
+    const { startDate, endDate, previousStartDate, previousEndDate, interval, timeFormat } = getDateRange(range, date);
     const dateFormat = getDateFormat(interval);
 
     let response: any = {};
@@ -189,32 +194,32 @@ export async function GET(request: Request) {
 
 // دوال مساعدة للحصول على البيانات
 async function getBasicStats() {
-  const [
-    inventoryStats,
-    activeVehicles,
-    todaySales,
-    treasury,
-    customersCount,
-    suppliersCount,
-    productsCount,
+    const [
+      inventoryStats,
+      activeVehicles,
+      todaySales,
+      treasury,
+      customersCount,
+      suppliersCount,
+      productsCount,
     activeDrivers
-  ] = await Promise.all([
-    prisma.product.aggregate({
-      _sum: { quantity: true }
-    }),
-    prisma.vehicle.count({
-      where: { status: 'ACTIVE' }
-    }),
-    prisma.sale.aggregate({
-      where: { date: { gte: startOfDay(new Date()) } },
-      _sum: { total: true }
-    }),
-    prisma.transaction.aggregate({
-      _sum: { amount: true }
-    }),
-    prisma.customer.count(),
-    prisma.supplier.count(),
-    prisma.product.count(),
+    ] = await Promise.all([
+      prisma.product.aggregate({
+        _sum: { quantity: true }
+      }),
+      prisma.vehicle.count({
+        where: { status: 'ACTIVE' }
+      }),
+      prisma.sale.aggregate({
+        where: { date: { gte: startOfDay(new Date()) } },
+        _sum: { total: true }
+      }),
+      prisma.transaction.aggregate({
+        _sum: { amount: true }
+      }),
+      prisma.customer.count(),
+      prisma.supplier.count(),
+      prisma.product.count(),
     prisma.driver.count({
       where: { status: 'ACTIVE' }
     })
@@ -241,6 +246,37 @@ async function getBasicStats() {
 }
 
 async function getSalesAnalytics(startDate: Date, endDate: Date, previousStartDate: Date, previousEndDate: Date, interval: string, dateFormat: string) {
+  // إنشاء خريطة زمنية كاملة
+  const timeMap = new Map();
+  let currentTime = new Date(startDate);
+  
+  while (currentTime <= endDate) {
+    const timeKey = format(currentTime, dateFormat, { locale: ar });
+    timeMap.set(timeKey, {
+      date: timeKey,
+      revenue: 0,
+      orders: 0,
+      averageOrderValue: 0
+    });
+
+    // تحديث الوقت حسب الفترة
+    switch (interval) {
+      case 'hour':
+        currentTime = addHours(currentTime, 1);
+        break;
+      case 'day':
+        currentTime = addDays(currentTime, 1);
+        break;
+      case 'week':
+        currentTime = addWeeks(currentTime, 1);
+        break;
+      case 'month':
+        currentTime = addMonths(currentTime, 1);
+        break;
+    }
+  }
+
+  // جلب البيانات وتجميعها
   const [currentSales, previousSales, salesHistory] = await Promise.all([
     prisma.sale.aggregate({
       where: {
@@ -266,20 +302,33 @@ async function getSalesAnalytics(startDate: Date, endDate: Date, previousStartDa
       },
       _count: true,
     }),
-    prisma.sale.groupBy({
-      by: ['date'],
+    prisma.sale.findMany({
       where: {
         date: {
           gte: startDate,
           lte: endDate,
         },
       },
-      _sum: {
+      select: {
+        date: true,
         total: true,
       },
-      _count: true,
+      orderBy: {
+        date: 'asc',
+      },
     })
   ]);
+
+  // تجميع البيانات في الفترات الزمنية
+  salesHistory.forEach((sale) => {
+    const timeKey = format(sale.date, dateFormat, { locale: ar });
+    if (timeMap.has(timeKey)) {
+      const entry = timeMap.get(timeKey);
+      entry.revenue += sale.total;
+      entry.orders += 1;
+      entry.averageOrderValue = entry.revenue / entry.orders;
+    }
+  });
 
   const currentRevenue = currentSales._sum.total || 0;
   const previousRevenue = previousSales._sum.total || 0;
@@ -293,18 +342,41 @@ async function getSalesAnalytics(startDate: Date, endDate: Date, previousStartDa
       revenue: calculateGrowth(currentRevenue, previousRevenue),
       orders: calculateGrowth(currentOrders, previousOrders),
     },
-    history: salesHistory.map((record) => ({
-      date: format(record.date, dateFormat, { locale: ar }),
-      revenue: record._sum.total || 0,
-      orders: record._count || 0,
-      averageOrderValue: record._sum.total && record._count
-        ? record._sum.total / record._count
-        : 0,
-    })),
+    history: Array.from(timeMap.values()),
   };
 }
 
 async function getInventoryAnalytics(startDate: Date, endDate: Date, interval: string, dateFormat: string) {
+  // إنشاء خريطة زمنية كاملة
+  const timeMap = new Map();
+  let currentTime = new Date(startDate);
+  
+  while (currentTime <= endDate) {
+    const timeKey = format(currentTime, dateFormat, { locale: ar });
+    timeMap.set(timeKey, {
+      date: timeKey,
+      inStock: 0,
+      added: 0,
+      removed: 0,
+    });
+
+    // تحديث الوقت حسب الفترة
+    switch (interval) {
+      case 'hour':
+        currentTime = addHours(currentTime, 1);
+        break;
+      case 'day':
+        currentTime = addDays(currentTime, 1);
+        break;
+      case 'week':
+        currentTime = addWeeks(currentTime, 1);
+        break;
+      case 'month':
+        currentTime = addMonths(currentTime, 1);
+        break;
+    }
+  }
+
   const [inventoryStats, lowStockProducts, inventoryHistory] = await Promise.all([
     prisma.product.aggregate({
       _sum: { quantity: true }
@@ -320,76 +392,75 @@ async function getInventoryAnalytics(startDate: Date, endDate: Date, interval: s
         minQuantity: true
       }
     }),
-    prisma.stockMovement.groupBy({
-      by: ['createdAt', 'type'],
+    prisma.stockMovement.findMany({
       where: {
         createdAt: {
           gte: startDate,
           lte: endDate,
         },
       },
-      _sum: {
+      select: {
+        createdAt: true,
+        type: true,
         quantity: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
       },
     })
   ]);
 
-  // تنظيم بيانات سجل المخزون
-  const inventoryHistoryMap = new Map();
   let currentStock = inventoryStats._sum.quantity || 0;
 
-  inventoryHistory.forEach((record) => {
-    const date = format(record.createdAt, dateFormat, { locale: ar });
-    if (!inventoryHistoryMap.has(date)) {
-      inventoryHistoryMap.set(date, {
-        date,
-        inStock: currentStock,
-        added: 0,
-        removed: 0,
-      });
-    }
-
-    const entry = inventoryHistoryMap.get(date);
-    if (record.type === 'PURCHASE') {
-      entry.added += record._sum.quantity || 0;
-    } else if (record.type === 'SALE') {
-      entry.removed += record._sum.quantity || 0;
+  // تجميع البيانات في الفترات الزمنية
+  inventoryHistory.forEach((movement) => {
+    const timeKey = format(movement.createdAt, dateFormat, { locale: ar });
+    if (timeMap.has(timeKey)) {
+      const entry = timeMap.get(timeKey);
+      if (movement.type === 'PURCHASE') {
+        entry.added += movement.quantity;
+      } else if (movement.type === 'SALE') {
+        entry.removed += movement.quantity;
+      }
+      entry.inStock = currentStock;
     }
   });
 
   return {
-    total: inventoryStats._sum.quantity || 0,
+    total: currentStock,
     lowStock: lowStockProducts.length,
     lowStockProducts,
-    history: Array.from(inventoryHistoryMap.values()),
+    history: Array.from(timeMap.values()),
   };
 }
 
 async function getProductionAnalytics(startDate: Date, endDate: Date, interval: string, dateFormat: string) {
-  // تحديد الفترة الزمنية والتنسيق
-  let groupByFormat: string;
-  let timeInterval: string;
+  // إنشاء خريطة زمنية كاملة
+  const timeMap = new Map();
+  let currentTime = new Date(startDate);
+  
+  while (currentTime <= endDate) {
+    const timeKey = format(currentTime, dateFormat, { locale: ar });
+    timeMap.set(timeKey, {
+      date: timeKey,
+      quantity: 0,
+    });
 
-  switch (interval) {
-    case 'hour':
-      groupByFormat = '%Y-%m-%d %H:00:00';
-      timeInterval = 'hour';
-      break;
-    case 'day':
-      groupByFormat = '%Y-%m-%d';
-      timeInterval = 'day';
-      break;
-    case 'week':
-      groupByFormat = '%Y-%m-%d';
-      timeInterval = 'week';
-      break;
-    case 'month':
-      groupByFormat = '%Y-%m-01';
-      timeInterval = 'month';
-      break;
-    default:
-      groupByFormat = '%Y-%m-%d';
-      timeInterval = 'day';
+    // تحديث الوقت حسب الفترة
+    switch (interval) {
+      case 'hour':
+        currentTime = addHours(currentTime, 1);
+        break;
+      case 'day':
+        currentTime = addDays(currentTime, 1);
+        break;
+      case 'week':
+        currentTime = addWeeks(currentTime, 1);
+        break;
+      case 'month':
+        currentTime = addMonths(currentTime, 1);
+        break;
+    }
   }
 
   const [productionHistory, materialHistory, currentStock] = await Promise.all([
@@ -435,69 +506,19 @@ async function getProductionAnalytics(startDate: Date, endDate: Date, interval: 
     })
   ]);
 
-  // تجميع البيانات حسب الفترة الزمنية
-  const productionMap = new Map();
-  const materialsMap = new Map();
-  
-  let currentTime = new Date(startDate);
-  while (currentTime <= endDate) {
-    const timeKey = format(currentTime, dateFormat, { locale: ar });
-    
-    productionMap.set(timeKey, {
-      date: timeKey,
-      quantity: 0,
-    });
-    
-    materialsMap.set(timeKey, {
-      date: timeKey,
-      materials: currentStock.map(material => ({
-        type: material.type,
-        quantity: 0,
-        unit: material.unit,
-      })),
-    });
-
-    // تحديث الوقت حسب الفترة
-    switch (timeInterval) {
-      case 'hour':
-        currentTime = addHours(currentTime, 1);
-        break;
-      case 'day':
-        currentTime = addDays(currentTime, 1);
-        break;
-      case 'week':
-        currentTime = addWeeks(currentTime, 1);
-        break;
-      case 'month':
-        currentTime = addMonths(currentTime, 1);
-        break;
-    }
-  }
-
-  // إضافة البيانات إلى الفترات الزمنية
+  // تجميع البيانات في الفترات الزمنية
   productionHistory.forEach((record) => {
     const timeKey = format(record.createdAt, dateFormat, { locale: ar });
-    if (productionMap.has(timeKey)) {
-      const entry = productionMap.get(timeKey);
+    if (timeMap.has(timeKey)) {
+      const entry = timeMap.get(timeKey);
       entry.quantity += record.quantity;
     }
   });
 
-  materialHistory.forEach((record) => {
-    const timeKey = format(record.createdAt, dateFormat, { locale: ar });
-    if (materialsMap.has(timeKey)) {
-      const entry = materialsMap.get(timeKey);
-      const materialIndex = currentStock.findIndex(m => m.id === record.materialId);
-      if (materialIndex !== -1) {
-        entry.materials[materialIndex].quantity += record.quantity;
-      }
-    }
-  });
-
   return {
-    history: Array.from(productionMap.values()),
+    history: Array.from(timeMap.values()),
     materials: {
-      history: Array.from(materialsMap.values()),
+      history: Array.from(timeMap.values()),
       currentStock: currentStock.map(material => ({
         type: material.type,
         quantity: material.quantity,

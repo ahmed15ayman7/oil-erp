@@ -20,7 +20,9 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@mui/material/styles';
-import { DateRangeSelector, DateRange, formatAxisDate } from '../date-range-selector';
+import { DateRangeSelector, DateRange } from '../date-range-selector';
+import dayjs from 'dayjs';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ProductionChartProps {
   data: {
@@ -60,6 +62,7 @@ const ChartLoadingAnimation = () => {
 
 export function ProductionChart({ data, onDateRangeChange, isLoading = false }: ProductionChartProps) {
   const theme = useTheme();
+  const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState<DateRange>('day');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isChangingRange, setIsChangingRange] = useState(false);
@@ -67,13 +70,39 @@ export function ProductionChart({ data, onDateRangeChange, isLoading = false }: 
   const handleRangeChange = (range: DateRange) => {
     setIsChangingRange(true);
     setDateRange(range);
-    onDateRangeChange(range, currentDate);
+
+    // التحقق من وجود البيانات في التخزين المؤقت
+    const cachedData = queryClient.getQueryData(["dashboardStats", "production", range, currentDate]);
+
+    if (!cachedData) {
+      onDateRangeChange(range, currentDate);
+    } else {
+      // استخدام البيانات المخزنة مؤقتاً
+      queryClient.setQueryData(["dashboardStats", "production", range, currentDate], cachedData);
+    }
+
     setTimeout(() => setIsChangingRange(false), 500);
   };
 
   const handleDateChange = (date: Date) => {
     setCurrentDate(date);
     onDateRangeChange(dateRange, date);
+  };
+
+  // تنسيق محور X حسب نطاق التاريخ
+  const formatXAxis = (value: string) => {
+    switch (dateRange) {
+      case 'day':
+        return dayjs(value).format('HH:mm');
+      case 'week':
+        return dayjs(value).format('ddd');
+      case 'month':
+        return `أسبوع ${dayjs(value).isoWeek()}`;
+      case 'year':
+        return dayjs(value).format('MMM');
+      default:
+        return value;
+    }
   };
 
   // حساب إجمالي الإنتاج للفترة المحددة
@@ -85,9 +114,6 @@ export function ProductionChart({ data, onDateRangeChange, isLoading = false }: 
   // حساب متوسط الإنتاج اليومي
   const averageProduction = !isLoading ? totalProduction / (data.history.length || 1) : 0;
   console.log(data.history)
-
-  const formatXAxis = (date: string) => formatAxisDate(date, dateRange);
-
   return (
     <Card
       component={motion.div}
@@ -187,6 +213,7 @@ export function ProductionChart({ data, onDateRangeChange, isLoading = false }: 
                         backgroundColor: theme.palette.background.paper,
                         border: `1px solid ${theme.palette.divider}`,
                       }}
+                      labelFormatter={formatXAxis}
                       formatter={(value: number) => [value.toLocaleString(), "الكمية"]}
                       labelStyle={{ color: theme.palette.text.primary }}
                     />

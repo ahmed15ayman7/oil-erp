@@ -21,10 +21,11 @@ import {
 } from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@mui/material/styles";
-import { DateRangeSelector, DateRange, formatAxisDate } from "../date-range-selector";
+import { DateRangeSelector, DateRange } from "../date-range-selector";
 import { useState, useCallback, useMemo } from "react";
 import { IconTrendingUp, IconTrendingDown } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
+import dayjs from "dayjs";
 
 interface SalesData {
   date: string;
@@ -79,22 +80,21 @@ export function SalesAnalytics({ data, onDateRangeChange, isLoading = false }: S
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isChangingRange, setIsChangingRange] = useState(false);
 
-  // تحسين الأداء باستخدام التخزين المؤقت
   const handleRangeChange = useCallback((range: DateRange) => {
     setIsChangingRange(true);
     setDateRange(range);
 
     // التحقق من وجود البيانات في التخزين المؤقت
-    const cachedData = queryClient.getQueryData(["dashboardStats", range, currentDate]);
+    const cachedData = queryClient.getQueryData(["dashboardStats", "sales", range, currentDate]);
 
     if (!cachedData) {
       onDateRangeChange(range, currentDate);
     } else {
       // استخدام البيانات المخزنة مؤقتاً
-      queryClient.setQueryData(["dashboardStats", range, currentDate], cachedData);
+      queryClient.setQueryData(["dashboardStats", "sales", range, currentDate], cachedData);
     }
 
-    setIsChangingRange(false);
+    setTimeout(() => setIsChangingRange(false), 500);
   }, [currentDate, onDateRangeChange, queryClient]);
 
   const handleDateChange = useCallback((date: Date) => {
@@ -102,13 +102,27 @@ export function SalesAnalytics({ data, onDateRangeChange, isLoading = false }: S
     onDateRangeChange(dateRange, date);
   }, [dateRange, onDateRangeChange]);
 
+  // تنسيق محور X حسب نطاق التاريخ
+  const formatXAxis = (value: string) => {
+    switch (dateRange) {
+      case 'day':
+        return dayjs(value).format('HH:mm');
+      case 'week':
+        return dayjs(value).format('ddd');
+      case 'month':
+        return `أسبوع ${dayjs(value).isoWeek()}`;
+      case 'year':
+        return dayjs(value).format('MMM');
+      default:
+        return value;
+    }
+  };
+
   // حساب القيم المطلوبة مرة واحدة فقط عند تغير البيانات
   const { averageOrderValue, growth } = useMemo(() => ({
     averageOrderValue: data.totalRevenue / data.totalOrders || 0,
     growth: data.growth || { revenue: 0, orders: 0 }
   }), [data.totalRevenue, data.totalOrders, data.growth]);
-
-  const formatXAxis = (date: string) => formatAxisDate(date, dateRange);
 
   return (
     <Card
@@ -256,6 +270,7 @@ export function SalesAnalytics({ data, onDateRangeChange, isLoading = false }: S
                         backgroundColor: theme.palette.background.paper,
                         border: `1px solid ${theme.palette.divider}`,
                       }}
+                      labelFormatter={formatXAxis}
                       formatter={(value: number, name: string) => {
                         if (name === "revenue") {
                           return [
