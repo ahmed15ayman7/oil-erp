@@ -306,9 +306,9 @@ export function SaleFormDialog({
               disabled={loading}
               fullWidth
             >
-              <MenuItem value="PENDING">معلقة</MenuItem>
-              <MenuItem value="COMPLETED">مكتملة</MenuItem>
-              <MenuItem value="CANCELLED">ملغاة</MenuItem>
+              <MenuItem value="UNPAID">غير مدفوعة</MenuItem>
+              <MenuItem value="PARTIALLY_PAID">مدفوعة جزئيا</MenuItem>
+              <MenuItem value="PAID">مدفوعة</MenuItem>
             </TextField>
           </div>
         </DialogContent>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DataTable } from '@/components/data-table';
 import { PageHeader } from '@/components/page-header';
@@ -107,6 +107,10 @@ export default function VehiclesPage() {
         }&limit=${rowsPerPage}&search=${searchQuery}&status=${selectedStatus}`
       ),
   });
+  useEffect(() => {
+    refetchVehicles();
+  }, [searchQuery, page, rowsPerPage, selectedStatus]);
+
 
   const handleAdd = () => {
     setSelectedVehicle(null);

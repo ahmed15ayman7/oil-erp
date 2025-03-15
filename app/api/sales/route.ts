@@ -3,8 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { ApiError } from '@/lib/api-error';
 import { successResponse, handleApiError } from '@/lib/api-response';
-import { Prisma } from '@prisma/client';
-import { TransactionType } from '@prisma/client';
+import { Prisma, PaymentStatus, TransactionType } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +26,7 @@ export async function GET(request: NextRequest) {
             { customer: { name: { contains: search } } },
           ],
         },
-        status ? { status: status as any } : {},
+        status ? { status: status as PaymentStatus } : {},
         startDate ? { date: { gte: new Date(startDate) } } : {},
         endDate ? { date: { lte: new Date(endDate) } } : {},
       ],
@@ -335,7 +334,7 @@ export async function PATCH(request: NextRequest) {
 
     const where: Prisma.SaleWhereInput = {
       AND: [
-        status ? { status: status as any } : {},
+        status ? { status: status as PaymentStatus } : {},
         startDate ? { date: { gte: new Date(startDate) } } : {},
         endDate ? { date: { lte: new Date(endDate) } } : {},
       ],

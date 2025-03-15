@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DataTable } from '@/components/data-table';
 import { PageHeader } from '@/components/page-header';
@@ -125,7 +125,9 @@ export default function InventoryPage() {
         }&limit=${rowsPerPage}&search=${searchQuery}&type=${selectedType}&category=${selectedCategory}`
       ),
   });
-
+useEffect(() => {
+  refetchProducts();
+}, [searchQuery, page, rowsPerPage, selectedType, selectedCategory]);
   // Fetch categories
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
@@ -232,11 +234,11 @@ export default function InventoryPage() {
         onPageChange={setPage}
         onRowsPerPageChange={setRowsPerPage}
         additionalActions={[
-          {
-            icon: <IconHistory />,
-            label: 'حركة المخزون',
-            onClick: handleMovement,
-          },
+          // {
+          //   icon: <IconHistory />,
+          //   label: 'حركة المخزون',
+          //   onClick: handleMovement,
+          // },
         ]}
       />}
 

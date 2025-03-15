@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DataTable } from '@/components/data-table';
 import { PageHeader } from '@/components/page-header';
@@ -112,6 +112,10 @@ export default function MaterialsPage() {
       ),
   });
 
+  useEffect(() => {
+    refetchMaterials();
+  }, [searchQuery, page, rowsPerPage]);
+
   const handleAdd = () => {
     setSelectedMaterial(null);
     setFormOpen(true);
@@ -215,11 +219,11 @@ export default function MaterialsPage() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         additionalActions={[
-          {
-            icon: <IconHistory />,
-            label: 'حركة المخزون',
-            onClick: handleMovement,
-          },
+          // {
+          //   icon: <IconHistory />,
+          //   label: 'حركة المخزون',
+          //   onClick: handleMovement,
+          // },
           {
             icon: <IconExchange />,
             label: 'تحويل إلى منتج',

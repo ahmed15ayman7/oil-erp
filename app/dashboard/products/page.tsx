@@ -91,7 +91,6 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const api = useApi();
-  const [products, setProducts] = useState([]);
 
   // Fetch products
   const {
@@ -115,14 +114,9 @@ export default function ProductsPage() {
   });
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    refetchProducts();
+  }, [searchQuery, page, rowsPerPage, selectedCategory]);
 
-  const fetchProducts = async () => {
-    const response = await fetch("/api/products");
-    const data = await response.json();
-    setProducts(data);
-  };
 
   const exportToExcel = async () => {
     const workbook = new ExcelJS.Workbook();
@@ -139,7 +133,7 @@ export default function ProductsPage() {
     ];
 
     // إضافة البيانات
-    products.forEach((product: Product) => {
+    data?.products.forEach((product: Product) => {
       worksheet.addRow({
         name: product.name,
         price: product.price,
@@ -162,7 +156,7 @@ export default function ProductsPage() {
   };
 
   const printPDF = async () => {
-    await generateProductsReport(products);
+    await generateProductsReport(data?.products);
   };
 
   const handleAdd = () => {
