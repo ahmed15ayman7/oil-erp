@@ -99,7 +99,7 @@ export default function DashboardPage() {
     } else if (type === 'production') {
       refetchProduction();
     }
-  }, [type, dateRange, currentDate]);
+  }, [type]);
   // إعداد WebSocket للتحديثات المباشرة
   useWebSocket({
     url: process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3000/api/websocket",
@@ -119,9 +119,9 @@ export default function DashboardPage() {
   });
 
   const handleDateRangeChange = (range: DateRange, date: dayjs.Dayjs,type: string) => {
-    setDateRange(range);
-    setCurrentDate(date);
-    setType(type as "sales" | "inventory" | "production");
+    // setDateRange(range);
+    // setCurrentDate(date);
+    // setType(type as "sales" | "inventory" | "production");
 
   };
 
@@ -153,6 +153,7 @@ export default function DashboardPage() {
       isLoading: isBasicLoading,
     },
   ];
+  // console.log(type,productionData,currentDate, dateRange)
   return (
     <AnimatePresence>
       <motion.div
@@ -200,6 +201,10 @@ export default function DashboardPage() {
                     data={productionData || { history: [] }}
                     onDateRangeChange={handleDateRangeChange}
                     isLoading={productionLoading}
+                    dateRange={dateRange}
+                    currentDate={currentDate}
+                    setDateRange={setDateRange}
+                    setCurrentDate={setCurrentDate}
                   />
                 </motion.div>
               </Grid>
@@ -215,6 +220,10 @@ export default function DashboardPage() {
                     data={salesData || { history: [] }}
                     onDateRangeChange={handleDateRangeChange}
                     isLoading={salesLoading}
+                    dateRange={dateRange}
+                    currentDate={currentDate}
+                    setDateRange={setDateRange}
+                    setCurrentDate={setCurrentDate}
                   />
                 </motion.div>
               </Grid>
@@ -230,6 +239,10 @@ export default function DashboardPage() {
                     data={inventoryData || { history: [], lowStockProducts: [] }}
                     onDateRangeChange={handleDateRangeChange}
                     isLoading={inventoryLoading}
+                    dateRange={dateRange}
+                    currentDate={currentDate}
+                    setDateRange={setDateRange}
+                    setCurrentDate={setCurrentDate}
                   />
                 </motion.div>
               </Grid>
@@ -245,6 +258,10 @@ export default function DashboardPage() {
                     data={productionData?.materials || { history: [], currentStock: [] }}
                     onDateRangeChange={handleDateRangeChange}
                     isLoading={productionLoading}
+                    dateRange={dateRange}
+                    currentDate={currentDate}
+                    setDateRange={setDateRange}
+                    setCurrentDate={setCurrentDate}
                   />
                 </motion.div>
               </Grid>

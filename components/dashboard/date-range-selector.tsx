@@ -174,7 +174,7 @@ export function DateRangeSelector({
         size="small"
       >
         <ToggleButton value="day">يوم</ToggleButton>
-        {/* <ToggleButton value="week">أسبوع</ToggleButton> */}
+        <ToggleButton value="week">أسبوع</ToggleButton>
         <ToggleButton value="month">شهر</ToggleButton>
         <ToggleButton value="year">سنة</ToggleButton>
       </ToggleButtonGroup>

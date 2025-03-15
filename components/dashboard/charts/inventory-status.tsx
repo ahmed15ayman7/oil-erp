@@ -46,6 +46,10 @@ interface InventoryStatusProps {
       minQuantity: number;
     }[];
   };
+  dateRange:DateRange;
+  currentDate:dayjs.Dayjs;
+  setDateRange: (range: DateRange) => void;
+  setCurrentDate: (date: dayjs.Dayjs) => void;
   onDateRangeChange: (range: DateRange, date: dayjs.Dayjs, type: string) => void;
   isLoading?: boolean;
 }
@@ -75,11 +79,9 @@ const ChartLoadingAnimation = () => {
   );
 };
 
-export function InventoryStatus({ data, onDateRangeChange, isLoading = false }: InventoryStatusProps) {
+export function InventoryStatus({ data, onDateRangeChange, isLoading = false, dateRange, currentDate, setDateRange, setCurrentDate }: InventoryStatusProps) {
   const theme = useTheme();
   const queryClient = useQueryClient();
-  const [dateRange, setDateRange] = useState<DateRange>("day");
-  const [currentDate, setCurrentDate] = useState(dayjs());
   const [isChangingRange, setIsChangingRange] = useState(false);
 
   const handleRangeChange = (range: DateRange) => {

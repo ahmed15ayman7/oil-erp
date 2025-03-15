@@ -32,6 +32,10 @@ interface ProductionChartProps {
       quantity: number;
     }[];
   };
+  dateRange:DateRange;
+  currentDate:dayjs.Dayjs;
+  setDateRange: (range: DateRange) => void;
+  setCurrentDate: (date: dayjs.Dayjs) => void;
   onDateRangeChange: (range: DateRange, date: dayjs.Dayjs, type: string) => void;
   isLoading?: boolean;
 }
@@ -61,11 +65,9 @@ const ChartLoadingAnimation = () => {
   );
 };
 
-export function ProductionChart({ data, onDateRangeChange, isLoading = false }: ProductionChartProps) {
+export function ProductionChart({ data, onDateRangeChange, isLoading = false, setDateRange, setCurrentDate, dateRange, currentDate }: ProductionChartProps) {
   const theme = useTheme();
   const queryClient = useQueryClient();
-  const [dateRange, setDateRange] = useState<DateRange>('day');
-  const [currentDate, setCurrentDate] = useState(dayjs());
   const [isChangingRange, setIsChangingRange] = useState(false);
 
   const handleRangeChange = (range: DateRange) => {

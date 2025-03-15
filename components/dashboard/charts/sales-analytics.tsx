@@ -44,6 +44,10 @@ interface SalesAnalyticsProps {
       orders: number;
     };
   };
+  dateRange:DateRange;
+  currentDate:dayjs.Dayjs;
+  setDateRange: (range: DateRange) => void;
+  setCurrentDate: (date: dayjs.Dayjs) => void;
   onDateRangeChange: (range: DateRange, date: dayjs.Dayjs, type: string) => void;
   isLoading?: boolean;
 }
@@ -73,11 +77,9 @@ const ChartLoadingAnimation = () => {
   );
 };
 
-export function SalesAnalytics({ data, onDateRangeChange, isLoading = false }: SalesAnalyticsProps) {
+export function SalesAnalytics({ data, onDateRangeChange, isLoading = false, dateRange, currentDate, setDateRange, setCurrentDate }: SalesAnalyticsProps) {
   const theme = useTheme();
   const queryClient = useQueryClient();
-  const [dateRange, setDateRange] = useState<DateRange>("day");
-  const [currentDate, setCurrentDate] = useState(dayjs());
   const [isChangingRange, setIsChangingRange] = useState(false);
 
   const handleRangeChange = useCallback((range: DateRange) => {
