@@ -4,6 +4,7 @@ import { getAuthSession } from '@/lib/auth';
 import { ApiError } from '@/lib/api-error';
 import { successResponse, handleApiError } from '@/lib/api-response';
 import { Prisma } from '@prisma/client';
+import { TransactionType } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -86,90 +87,129 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getAuthSession();
-
-    const data = await request.json();
-
-    // Validate required fields
-    if (!data.customerId || !data.items || !data.items.length) {
-      return handleApiError(new ApiError('Missing required fields', 400));
+    if (!session) {
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Generate invoice number
-    const lastSale = await prisma.sale.findFirst({
-      orderBy: { createdAt: 'desc' },
-    });
+    const body = await request.json();
+    const { customerId, items, dueDate, tax, discount, repId } = body;
 
-    const invoiceNumber = lastSale
-      ? `INV-${String(parseInt(lastSale.invoiceNumber.split('-')[1]) + 1).padStart(5, '0')}`
-      : 'INV-00001';
-
-    // Calculate totals
-    const subtotal = data.items.reduce(
-      (sum: number, item: any) => sum + item.quantity * item.price,
-      0
-    );
-    const tax = (data.tax || 0) * subtotal;
-    const discount = data.discount || 0;
+    // حساب المجاميع
+    const subtotal = items.reduce((sum: number, item: any) => sum + item.total, 0);
     const total = subtotal + tax - discount;
 
-    // Create sale with items
-    const sale = await prisma.sale.create({
-      data: {
-        invoiceNumber,
-        customerId: data.customerId,
-        date: data.date || new Date(),
-        dueDate: data.dueDate,
-        repId: data.repId || session.user.id, // Add required repId field
-        status: data.status || 'PENDING',
-        subtotal,
-        tax: data.tax || 0,
-        discount,
-        total,
-        notes: data.notes,
-        userId: session.user.id,
-        items: {
-          create: data.items.map((item: any) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.price,
-            total: item.quantity * item.price,
-            notes: item.notes,
-          })),
-        },
-      },
-      include: {
-        customer: true,
-        items: {
-          include: {
-            product: true,
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
+    // إنشاء رقم الفاتورة
+    const lastSale = await prisma.sale.findFirst({
+      orderBy: { createdAt: "desc" },
     });
+    const lastNumber = lastSale ? parseInt(lastSale.invoiceNumber.split("-")[1]) : 0;
+    const invoiceNumber = `INV-${(lastNumber + 1).toString().padStart(5, "0")}`;
 
-    // Update product quantities
-    await Promise.all(
-      data.items.map((item: any) =>
-        prisma.product.update({
+    // بدء المعاملة
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. إنشاء الفاتورة
+      const sale = await tx.sale.create({
+        data: {
+          invoiceNumber,
+          customerId,
+          date: new Date(),
+          dueDate: dueDate ? new Date(dueDate) : null,
+          subtotal,
+          tax,
+          discount,
+          total,
+          userId: session.user.id,
+          repId,
+          transactions: {
+            create: {
+              type: "SALE_PAYMENT" as TransactionType,
+              amount: total,
+              description: `دفع فاتورة مبيعات رقم ${invoiceNumber}`,
+              user: {
+                    connect: {
+                      id: session.user.id,
+                    },
+                  },
+              },
+            },
+          items: {
+            create: items.map((item: any) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.price,
+              total: item.total,
+            })),
+          },
+        },
+      });
+
+      // 2. تحديث المخزون
+      for (const item of items) {
+        await tx.product.update({
           where: { id: item.productId },
           data: {
             quantity: {
               decrement: item.quantity,
             },
           },
-        })
-      )
-    );
+        });
 
-    return successResponse(sale);
+        // إنشاء حركة مخزون
+        await tx.stockMovement.create({
+          data: {
+            productId: item.productId,
+            type: "SALE",
+            quantity: -item.quantity,
+            reference: invoiceNumber,
+            userId: session.user.id,
+          },
+        });
+      }
+
+      // 3. إنشاء معاملة مالية في الخزينة
+      const transaction = await tx.transaction.create({
+        data: {
+          type: "SALE_PAYMENT",
+          amount: total,
+          description: `دفع فاتورة مبيعات رقم ${invoiceNumber}`,
+          reference: invoiceNumber,
+          referenceType: "SALE",
+          saleId: sale.id,
+          createdBy: session.user.id,
+        },
+      });
+
+      // 4. إذا كان هناك مندوب، إنشاء معاملة مالية لعمولة التوصيل
+      if (repId) {
+        const representative = await tx.representative.findUnique({
+          where: { id: repId },
+        });
+
+        if (representative && representative.deliveryFee > 0) {
+          await tx.transaction.create({
+            data: {
+              type: "DELIVERY_PAYMENT",
+              amount: -representative.deliveryFee,
+              description: `عمولة توصيل للمندوب - فاتورة رقم ${invoiceNumber}`,
+              reference: invoiceNumber,
+              referenceType: "SALE",
+              representativeId: repId,
+              createdBy: session.user.id,
+            },
+          });
+        }
+      }
+
+      return sale;
+    });
+
+    return NextResponse.json(result);
   } catch (error) {
-    return handleApiError(error);
+    console.error("[SALES_POST]", error);
+    return NextResponse.json(
+      { error: "حدث خطأ أثناء إنشاء الفاتورة" },
+      { status: 500 }
+    );
   }
 }
 
@@ -351,4 +391,77 @@ function getStatusText(status: string): string {
     CANCELLED: 'ملغي',
   };
   return statusMap[status] || status;
+}
+
+// تحديث دالة الحذف لحذف المعاملات المالية المرتبطة
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getAuthSession();
+    if (!session) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const url = new URL(request.url);
+    const id = url.searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "معرف الفاتورة مطلوب" },
+        { status: 400 }
+      );
+    }
+
+    // بدء المعاملة
+    await prisma.$transaction(async (tx) => {
+      // 1. حذف المعاملات المالية المرتبطة
+      await tx.transaction.deleteMany({
+        where: {
+          OR: [
+            { saleId: id },
+            { reference: { startsWith: `INV-` }, referenceType: "SALE" },
+          ],
+        },
+      });
+
+      // 2. استرجاع المخزون
+      const saleItems = await tx.saleItem.findMany({
+        where: { saleId: id },
+      });
+
+      for (const item of saleItems) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            quantity: {
+              increment: item.quantity,
+            },
+          },
+        });
+
+        // إنشاء حركة مخزون عكسية
+        await tx.stockMovement.create({
+          data: {
+            productId: item.productId,
+            type: "RETURN",
+            quantity: item.quantity,
+            reference: `RETURN-${id}`,
+            userId: session.user.id,
+          },
+        });
+      }
+
+      // 3. حذف الفاتورة
+      await tx.sale.delete({
+        where: { id },
+      });
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[SALES_DELETE]", error);
+    return NextResponse.json(
+      { error: "حدث خطأ أثناء حذف الفاتورة" },
+      { status: 500 }
+    );
+  }
 }

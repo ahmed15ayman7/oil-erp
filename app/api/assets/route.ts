@@ -1,109 +1,264 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/auth";
-import { AssetType, Prisma } from "@prisma/client";
-export async function GET(req: Request) {
-  try {
-    const session = await getAuthSession();
-    if (!session) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
+import { AssetType, Prisma, TransactionType } from "@prisma/client";
 
-    const { searchParams } = new URL(req.url);
-    const page = Number(searchParams.get("page")) || 1;
-    const limit = Number(searchParams.get("limit")) || 10;
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
     const search = searchParams.get("search") || "";
 
-    const assets = await prisma.asset.findMany({
-      where: {
-        OR: [
-          { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
+    const skip = (page - 1) * limit;
 
-        ],
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
+           
+          ],
+        }
+      : {};
+
+    const [assets, total] = await Promise.all([
+      prisma.asset.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.asset.count({ where }),
+    ]);
+
+    // حساب الإحصائيات
+    const stats = await prisma.$transaction([
+      prisma.asset.count(),
+      prisma.asset.count({ where: { status: "ACTIVE" } }),
+      prisma.asset.count({ where: { status: "MAINTENANCE" } }),
+      prisma.asset.count({ where: { status: "INACTIVE" } }),
+      prisma.asset.aggregate({
+        _sum: { value: true },
+        where: { status: "ACTIVE" },
+      }),
+    ]);
+
+    return NextResponse.json({
+      assets,
+      total,
+      stats: {
+        total: stats[0],
+        active: stats[1],
+        maintenance: stats[2],
+        inactive: stats[3],
+        totalValue: stats[4]._sum.value || 0,
       },
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: "desc" },
     });
-
-    const total = await prisma.asset.count({
-      where: {
-        OR: [
-          { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
-        ],
-      },
-    });
-
-    return NextResponse.json({ assets, total });
   } catch (error) {
-    console.error("[ASSETS_GET]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    console.error("Error in GET /api/assets:", error);
+    return NextResponse.json(
+      { error: "حدث خطأ أثناء جلب البيانات" },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const body = await req.json();
-    const asset = await prisma.asset.create({
-      data: {
-        ...body,
-        createdBy: session.user.id,
-      },
+    const body = await request.json();
+    const { name, type, value, purchaseDate, nextMaintenanceDate, status, maxMaterials } = body;
+
+    // بدء المعاملة
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. إنشاء الأصل
+      const asset = await tx.asset.create({
+        data: {
+          name,
+          type,
+          value: parseFloat(value),
+          maxMaterials: parseFloat(maxMaterials),
+          purchaseDate: new Date(purchaseDate),
+          nextMaintenance:  new Date(nextMaintenanceDate) ,
+          status,
+          user: {
+            connect: {
+              id: session.user.id,
+            },
+          },
+        },
+      });
+
+      // 2. إنشاء معاملة مالية في الخزينة
+      const transaction = await tx.transaction.create({
+        data: {
+          type: "ASSET_PURCHASE" as TransactionType,
+          amount: -value, // قيمة سالبة لأنها مصروفات
+          description: `شراء أصل: ${name}`,
+          reference: asset.id,
+          referenceType: "ASSET",
+          asset: {
+            connect: {
+              id: asset.id,
+            },
+          },
+          user: {
+            connect: {
+              id: session.user.id,
+            },
+          },
+        },
+      });
+
+      return asset;
     });
 
-    return NextResponse.json(asset);
+    return NextResponse.json(result);
   } catch (error) {
     console.error("[ASSETS_POST]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    return NextResponse.json(
+      { error: "حدث خطأ أثناء إنشاء الأصل" },
+      { status: 500 }
+    );
   }
 }
 
-export async function PUT(req: Request) {
+export async function PUT(request: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const body = await req.json();
+    const data = await request.json();
+    const { id, ...updateData } = data;
     const asset = await prisma.asset.update({
-      where: { id: body.id },
-      data: body,
+      where: { id },
+      data: updateData,
     });
 
     return NextResponse.json(asset);
   } catch (error) {
-    console.error("[ASSETS_PUT]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    console.error("Error in PUT /api/assets:", error);
+    return NextResponse.json(
+      { error: "حدث خطأ أثناء تحديث الأصل" },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(request: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
+    const url = new URL(request.url);
+    const id = url.searchParams.get("id");
 
     if (!id) {
-      return new NextResponse("Missing id", { status: 400 });
+      return NextResponse.json(
+        { error: "معرف الأصل مطلوب" },
+        { status: 400 }
+      );
     }
 
-    const asset = await prisma.asset.delete({
-      where: { id },
+    // بدء المعاملة
+    await prisma.$transaction(async (tx) => {
+      // 1. حذف المعاملات المالية المرتبطة
+      await tx.transaction.deleteMany({
+        where: {
+          assetId: id,
+        },
+      });
+
+      // 2. حذف الأصل
+      await tx.asset.delete({
+        where: { id },
+      });
     });
 
-    return NextResponse.json(asset);
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[ASSETS_DELETE]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    return NextResponse.json(
+      { error: "حدث خطأ أثناء حذف الأصل" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getAuthSession();
+    if (!session) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id, ...data } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "معرف الأصل مطلوب" },
+        { status: 400 }
+      );
+    }
+
+    // بدء المعاملة
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. تحديث الأصل
+      const asset = await tx.asset.update({
+        where: { id },
+        data: {
+          ...data,
+          nextMaintenanceDate: data.nextMaintenanceDate ? new Date(data.nextMaintenanceDate) : null,
+        },
+      });
+
+      // 2. إذا تم تغيير القيمة، قم بإنشاء معاملة مالية جديدة
+      if (data.value !== undefined) {
+        const oldAsset = await tx.asset.findUnique({
+          where: { id },
+        });
+
+        if (oldAsset && oldAsset.value !== data.value) {
+          await tx.transaction.create({
+            data: {
+              type: "ASSET_VALUE_CHANGE" as TransactionType,
+              amount: oldAsset.value - data.value, // الفرق بين القيمة القديمة والجديدة
+              description: `تعديل قيمة الأصل: ${asset.name}`,
+              reference: asset.id,
+              referenceType: "ASSET",
+              asset: {
+                connect: {
+                  id: asset.id,
+                },
+              },
+              user: {
+                connect: {
+                  id: session.user.id,
+                },
+              },
+            },
+          });
+        }
+      }
+
+      return asset;
+    });
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("[ASSETS_PATCH]", error);
+    return NextResponse.json(
+      { error: "حدث خطأ أثناء تحديث الأصل" },
+      { status: 500 }
+    );
   }
 }

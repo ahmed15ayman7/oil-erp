@@ -1,67 +1,94 @@
-import { NextRequest } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { getAuthSession } from '@/lib/auth';
-import { handleApiError, successResponse } from '@/lib/api-response';
-import { MaterialType } from '@prisma/client';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getAuthSession } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getAuthSession();
-    const data = await request.json();
-    const { materialId, productId, quantity, result } = data;
+    if (!session) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
 
-    // Start a transaction
-    await prisma.$transaction(async (tx) => {
-      // Deduct raw material
+    const body = await request.json();
+    const { materialId, productId, assetId, quantity, startTime, result } = body;
+
+    // بدء المعاملة
+    const transaction = await prisma.$transaction(async (tx) => {
+      // 1. إنشاء سجل الإنتاج
+      const production = await tx.production.create({
+        data: {
+          materialId,
+          productId,
+          assetId,
+          quantity,
+          output: result.expectedOutput,
+          startTime: new Date(startTime),
+          status: "IN_PROGRESS",
+          createdBy: session.user.id,
+        },
+      });
+
+      // 2. تحديث كمية المادة الخام
       await tx.material.update({
         where: { id: materialId },
         data: {
           quantity: {
-            decrement: quantity * 1000 // Convert tons to kg
+            decrement: quantity,
           },
-          transactions: {
-            create: {
-              type: 'OUT',
-              quantity: quantity * 1000,
-              notes: `تحويل إلى منتج ${productId}`,
-              createdBy: session.user.id,
-            }
-          }
-        }
+        },
       });
 
-      // Update inventory for bottles, caps, sleeves, etc.
-      const materialsToUpdate = [
-        { type: 'BOTTLE', quantity: result.bottles },
-        { type: 'BOTTLE_CAP', quantity: result.caps },
-        { type: 'SLEEVE', quantity: result.sleeves },
-        { type: 'CARTON', quantity: result.cartons },
-      ];
+      // 3. إنشاء معاملة للمادة الخام
+      await tx.materialTransaction.create({
+        data: {
+          materialId,
+          type: "OUT",
+          quantity: quantity,
+          reference: `PROD-${production.id}`,
+          notes: "تحويل إلى منتج نهائي",
+          createdBy: session.user.id,
+        },
+      });
 
-      for (const item of materialsToUpdate) {
-        await tx.material.updateMany({
-          where: { type: item.type as MaterialType },
-          data: {
-            quantity: {
-              decrement: item.quantity
-            }
-          }
-        });
-      }
-
-      // Add the finished product
+      // 4. تحديث كمية المنتج النهائي
       await tx.product.update({
         where: { id: productId },
         data: {
           quantity: {
-            increment: result.bottles
-          }
-        }
+            increment: result.expectedOutput,
+          },
+        },
       });
+
+      // 5. إنشاء حركة مخزون للمنتج النهائي
+      await tx.stockMovement.create({
+        data: {
+          productId,
+          type: "ADJUSTMENT",
+          quantity: result.expectedOutput,
+          reference: `PROD-${production.id}`,
+          notes: "إنتاج جديد",
+          userId: session.user.id,
+        },
+      });
+
+      return production;
     });
 
-    return successResponse({ success: true });
+    return NextResponse.json({
+      success: true,
+      message: "تم تسجيل عملية الإنتاج بنجاح",
+      productionId: transaction.id,
+    });
   } catch (error) {
-    return handleApiError(error);
+    console.error("[MATERIALS_CONVERT_CONFIRM]", error);
+    return NextResponse.json(
+      { error: "حدث خطأ أثناء تأكيد عملية التحويل" },
+      { status: 500 }
+    );
   }
+}
+
+export async function GET() {
+  return new NextResponse("Method not allowed", { status: 405 });
 } 

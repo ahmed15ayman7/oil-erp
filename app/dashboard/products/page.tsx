@@ -48,6 +48,11 @@ const columns = [
     format: (value: number) => value.toLocaleString('ar-EG'),
   },
   {
+    id: 'quantity',
+    label: 'عددالكراتين',
+    format: (value: number) => (value/12).toLocaleString('ar-EG'),
+  },
+  {
     id: 'stockValue',
     label: 'قيمة المخزون',
     format: (value: number) => value.toLocaleString('ar-EG', {

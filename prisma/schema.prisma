@@ -31,6 +31,7 @@ model User {
   assets        Asset[]
   maintenanceLogs MaintenanceLog[]
   representatives Representative[]
+  productions   Production[]  // إضافة العلاقة مع سجلات الإنتاج
 
   Driver Driver[]
 }
@@ -66,6 +67,7 @@ model Product {
   purchaseItems     PurchaseItem[]
   saleItems         SaleItem[]
   stockMovements    StockMovement[]
+  productions       Production[]    // إضافة العلاقة مع سجلات الإنتاج
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
@@ -174,6 +176,7 @@ model VehicleExpense {
   updatedAt   DateTime    @updatedAt
   userId      String
   user        User        @relation(fields: [userId], references: [id])
+  transactions Transaction[]
 }
 
 enum VehicleStatus {
@@ -214,6 +217,7 @@ model Sale {
   rep           SalesRepresentative @relation(fields: [repId], references: [id])
   representatives Representative[] @relation("RepresentativeSales", references: [id], fields: [representativeIds])
   representativeIds String[] @default([])
+  transactions Transaction[]
 }
 
 model SaleItem {
@@ -246,6 +250,7 @@ model Purchase {
   updatedAt     DateTime  @updatedAt
   userId        String
   user          User      @relation(fields: [userId], references: [id])
+  transactions Transaction[]
 }
 
 model PurchaseItem {
@@ -275,17 +280,43 @@ model Transaction {
   type          TransactionType
   amount        Float
   description   String?
-  user          User      @relation(fields: [userId], references: [id])
-  userId        String
-  status        TransactionStatus @default(PENDING)
+  reference     String?   // رقم المرجع (مثل رقم الفاتورة)
+  referenceType String?   // نوع المرجع (مثل SALE, PURCHASE, MAINTENANCE)
+  date          DateTime  @default(now())
+  status        TransactionStatus @default(COMPLETED)
   currency      String    @default("EGP")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  createdBy     String
+  user          User      @relation(fields: [createdBy], references: [id])
+
+  // العلاقات
+  sale          Sale?     @relation(fields: [saleId], references: [id])
+  saleId        String?
+  purchase      Purchase? @relation(fields: [purchaseId], references: [id])
+  purchaseId    String?
+  maintenance   MaintenanceLog? @relation(fields: [maintenanceId], references: [id])
+  maintenanceId String?
+  vehicleExpense VehicleExpense? @relation(fields: [vehicleExpenseId], references: [id])
+  vehicleExpenseId String?
+  delivery      Delivery? @relation(fields: [deliveryId], references: [id])
+  deliveryId    String?
+  representative Representative? @relation(fields: [representativeId], references: [id])
+  representativeId String?
+  asset Asset? @relation(fields: [assetId], references: [id])
+  assetId String?
+
+  SalesRepresentative TransactionSalesRepresentative[]
 }
 
 enum TransactionType {
-  INCOME
-  EXPENSE
+  SALE_PAYMENT       // دفع مبيعات
+  PURCHASE_PAYMENT   // دفع مشتريات
+  MAINTENANCE_COST   // تكلفة صيانة
+  VEHICLE_EXPENSE    // مصاريف مركبات
+  DELIVERY_PAYMENT   // مدفوعات توصيل
+  SALARY            // رواتب
+  OTHER             // أخرى
 }
 
 enum TransactionStatus {
@@ -351,6 +382,15 @@ model SalesRepresentative {
   sales         Sale[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  transactions TransactionSalesRepresentative[]
+  deliveryFee   Float    @default(0)  // سعر التوصيل الافتراضي للمندوب
+}
+model TransactionSalesRepresentative {
+  id            String    @id @default(cuid()) @map("_id")
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  salesRepresentativeId String
+  salesRepresentative SalesRepresentative @relation(fields: [salesRepresentativeId], references: [id])
 }
 
 model AttendanceRecord {
@@ -368,7 +408,8 @@ model Asset {
   name          String
   type          AssetType
   purchaseDate  DateTime
-  value         Float
+  value         Float // القيمة الأصلية للأصل
+  maxMaterials Float // الحد الأقصى للمواد الخام المستخدمة
   nextMaintenance DateTime?
   status        AssetStatus
   createdAt     DateTime  @default(now())
@@ -376,6 +417,8 @@ model Asset {
   createdBy     String
   user          User      @relation(fields: [createdBy], references: [id]) 
   maintenanceLogs MaintenanceLog[]
+  productions   Production[]  // إضافة العلاقة مع سجلات الإنتاج
+  transactions Transaction[]
 }
 
 enum AssetType {
@@ -402,6 +445,7 @@ model MaintenanceLog {
   updatedAt   DateTime  @updatedAt
   createdBy   String
   user        User      @relation(fields: [createdBy], references: [id]) 
+  transactions Transaction[]
 }
 
 model Representative {
@@ -416,6 +460,8 @@ model Representative {
   updatedAt DateTime  @updatedAt
   createdBy String
   user      User      @relation(fields: [createdBy], references: [id])
+  transactions Transaction[]
+  deliveryFee Float    @default(0)  // سعر التوصيل الافتراضي للمندوب
 }
 
 enum RepresentativeStatus {
@@ -489,6 +535,7 @@ model Material {
   supplier    String?     // المورد
   notes       String?     // ملاحظات
   transactions MaterialTransaction[] // سجل المعاملات
+  productions Production[]  // إضافة العلاقة مع سجلات الإنتاج
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -538,9 +585,11 @@ model Delivery {
   driver      Driver    @relation(fields: [driverId], references: [id])
   date        DateTime
   status      DeliveryStatus
+  deliveryFee Float     // سعر التوصيل
   notes       String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  transactions Transaction[] // العلاقة مع المعاملات المالية
 }
 
 enum DeliveryStatus {
@@ -548,5 +597,33 @@ enum DeliveryStatus {
   IN_PROGRESS // جاري التسليم
   COMPLETED   // تم التسليم
   CANCELLED   // ملغي
+}
+
+// إضافة نموذج سجلات الإنتاج
+model Production {
+  id          String    @id @default(cuid()) @map("_id")
+  assetId     String    // الأصل المستخدم في الإنتاج
+  asset       Asset     @relation(fields: [assetId], references: [id])
+  materialId  String    // المادة الخام المستخدمة
+  material    Material  @relation(fields: [materialId], references: [id])
+  productId   String    // المنتج النهائي
+  product     Product   @relation(fields: [productId], references: [id])
+  quantity    Float     // كمية المادة الخام المستخدمة
+  output      Float     // كمية المنتج النهائي
+  startTime   DateTime  // وقت بدء الإنتاج
+  endTime     DateTime? // وقت انتهاء الإنتاج
+  status      ProductionStatus @default(IN_PROGRESS)
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String
+  user        User      @relation(fields: [createdBy], references: [id])
+}
+
+enum ProductionStatus {
+  IN_PROGRESS  // جاري الإنتاج
+  COMPLETED    // مكتمل
+  CANCELLED    // ملغي
+  PAUSED       // متوقف مؤقتاً
 }
 
