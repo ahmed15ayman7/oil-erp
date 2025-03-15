@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/auth';
-import { addDays, startOfDay, endOfDay, subDays, format, subMonths, subYears ,Locale} from 'date-fns';
+import { addDays, startOfDay, endOfDay, subDays, format, subMonths, subYears ,Locale, addHours, addWeeks, addMonths} from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 // دالة مساعدة للحصول على نطاق التاريخ
@@ -366,9 +366,34 @@ async function getInventoryAnalytics(startDate: Date, endDate: Date, interval: s
 }
 
 async function getProductionAnalytics(startDate: Date, endDate: Date, interval: string, dateFormat: string) {
+  // تحديد الفترة الزمنية والتنسيق
+  let groupByFormat: string;
+  let timeInterval: string;
+
+  switch (interval) {
+    case 'hour':
+      groupByFormat = '%Y-%m-%d %H:00:00';
+      timeInterval = 'hour';
+      break;
+    case 'day':
+      groupByFormat = '%Y-%m-%d';
+      timeInterval = 'day';
+      break;
+    case 'week':
+      groupByFormat = '%Y-%m-%d';
+      timeInterval = 'week';
+      break;
+    case 'month':
+      groupByFormat = '%Y-%m-01';
+      timeInterval = 'month';
+      break;
+    default:
+      groupByFormat = '%Y-%m-%d';
+      timeInterval = 'day';
+  }
+
   const [productionHistory, materialHistory, currentStock] = await Promise.all([
-    prisma.materialTransaction.groupBy({
-      by: ['createdAt'],
+    prisma.materialTransaction.findMany({
       where: {
         type: 'OUT',
         createdAt: {
@@ -376,20 +401,28 @@ async function getProductionAnalytics(startDate: Date, endDate: Date, interval: 
           lte: endDate,
         },
       },
-      _sum: {
+      select: {
         quantity: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
       },
     }),
-    prisma.materialTransaction.groupBy({
-      by: ['createdAt', 'materialId'],
+    prisma.materialTransaction.findMany({
       where: {
         createdAt: {
           gte: startDate,
           lte: endDate,
         },
       },
-      _sum: {
+      select: {
         quantity: true,
+        createdAt: true,
+        materialId: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
       },
     }),
     prisma.material.findMany({
@@ -402,35 +435,67 @@ async function getProductionAnalytics(startDate: Date, endDate: Date, interval: 
     })
   ]);
 
-  // تنظيم بيانات المواد حسب التاريخ
+  // تجميع البيانات حسب الفترة الزمنية
+  const productionMap = new Map();
   const materialsMap = new Map();
   
-  materialHistory.forEach((record) => {
-    const date = format(record.createdAt, dateFormat, { locale: ar });
-    if (!materialsMap.has(date)) {
-      materialsMap.set(date, {
-        date,
-        materials: [],
-      });
-    }
+  let currentTime = new Date(startDate);
+  while (currentTime <= endDate) {
+    const timeKey = format(currentTime, dateFormat, { locale: ar });
     
-    const entry = materialsMap.get(date);
-    const material = currentStock.find(m => m.id === record.materialId);
+    productionMap.set(timeKey, {
+      date: timeKey,
+      quantity: 0,
+    });
     
-    if (material) {
-      entry.materials.push({
+    materialsMap.set(timeKey, {
+      date: timeKey,
+      materials: currentStock.map(material => ({
         type: material.type,
-        quantity: record._sum.quantity || 0,
+        quantity: 0,
         unit: material.unit,
-      });
+      })),
+    });
+
+    // تحديث الوقت حسب الفترة
+    switch (timeInterval) {
+      case 'hour':
+        currentTime = addHours(currentTime, 1);
+        break;
+      case 'day':
+        currentTime = addDays(currentTime, 1);
+        break;
+      case 'week':
+        currentTime = addWeeks(currentTime, 1);
+        break;
+      case 'month':
+        currentTime = addMonths(currentTime, 1);
+        break;
+    }
+  }
+
+  // إضافة البيانات إلى الفترات الزمنية
+  productionHistory.forEach((record) => {
+    const timeKey = format(record.createdAt, dateFormat, { locale: ar });
+    if (productionMap.has(timeKey)) {
+      const entry = productionMap.get(timeKey);
+      entry.quantity += record.quantity;
+    }
+  });
+
+  materialHistory.forEach((record) => {
+    const timeKey = format(record.createdAt, dateFormat, { locale: ar });
+    if (materialsMap.has(timeKey)) {
+      const entry = materialsMap.get(timeKey);
+      const materialIndex = currentStock.findIndex(m => m.id === record.materialId);
+      if (materialIndex !== -1) {
+        entry.materials[materialIndex].quantity += record.quantity;
+      }
     }
   });
 
   return {
-    history: productionHistory.map((record) => ({
-      date: format(record.createdAt, dateFormat, { locale: ar }),
-      quantity: record._sum.quantity || 0,
-    })),
+    history: Array.from(productionMap.values()),
     materials: {
       history: Array.from(materialsMap.values()),
       currentStock: currentStock.map(material => ({
