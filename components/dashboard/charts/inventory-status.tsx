@@ -8,6 +8,7 @@ import {
   Typography,
   Chip,
   Tooltip,
+  Skeleton,
 } from "@mui/material";
 import {
   BarChart,
@@ -20,7 +21,7 @@ import {
   Line,
   ComposedChart,
 } from "recharts";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@mui/material/styles";
 import { DateRangeSelector, DateRange } from "../date-range-selector";
 import { useState } from "react";
@@ -43,16 +44,45 @@ interface InventoryStatusProps {
     }[];
   };
   onDateRangeChange: (range: DateRange, date: Date) => void;
+  isLoading?: boolean;
 }
 
-export function InventoryStatus({ data, onDateRangeChange }: InventoryStatusProps) {
+// مكون التحميل للرسم البياني
+const ChartLoadingAnimation = () => {
+  const theme = useTheme();
+  return (
+    <svg width="100%" height="300">
+      <motion.path
+        d="M0,150 C100,100 200,200 300,150 C400,100 500,200 600,150"
+        fill="none"
+        stroke={theme.palette.primary.main}
+        strokeWidth="2"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{
+          pathLength: 1,
+          opacity: 0.3,
+          transition: {
+            duration: 2,
+            ease: "easeInOut",
+            repeat: Infinity,
+          },
+        }}
+      />
+    </svg>
+  );
+};
+
+export function InventoryStatus({ data, onDateRangeChange, isLoading = false }: InventoryStatusProps) {
   const theme = useTheme();
   const [dateRange, setDateRange] = useState<DateRange>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [isChangingRange, setIsChangingRange] = useState(false);
 
   const handleRangeChange = (range: DateRange) => {
+    setIsChangingRange(true);
     setDateRange(range);
     onDateRangeChange(range, currentDate);
+    setTimeout(() => setIsChangingRange(false), 500);
   };
 
   const handleDateChange = (date: Date) => {
@@ -81,94 +111,128 @@ export function InventoryStatus({ data, onDateRangeChange }: InventoryStatusProp
         }
       />
       <CardContent>
-        <Box className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <Box className="p-4 rounded-lg bg-black/5 dark:bg-white/5">
-            <Typography variant="subtitle2" color="text.secondary">
-              إجمالي المخزون
-            </Typography>
-            <Typography variant="h4" className="mt-1">
-              {data.total.toLocaleString()}
-            </Typography>
-          </Box>
-          <Box className="p-4 rounded-lg bg-error/10">
-            <Typography variant="subtitle2" color="error">
-              منتجات منخفضة المخزون
-            </Typography>
-            <Typography variant="h4" className="mt-1" color="error">
-              {data.lowStock.toLocaleString()}
-            </Typography>
-          </Box>
-        </Box>
+        <AnimatePresence mode="wait">
+          {(isLoading || isChangingRange) ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Box className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {[1, 2].map((i) => (
+                  <Box key={i} className="p-4 rounded-lg bg-black/5 dark:bg-white/5">
+                    <Skeleton variant="text" width={120} height={24} />
+                    <Skeleton variant="text" width={150} height={32} className="mt-1" />
+                  </Box>
+                ))}
+              </Box>
+              <ChartLoadingAnimation />
+              <Box className="mt-6">
+                <Skeleton variant="text" width={200} height={24} className="mb-2" />
+                <Box className="flex flex-wrap gap-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <Skeleton key={i} variant="rounded" width={100} height={32} />
+                  ))}
+                </Box>
+              </Box>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Box className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <Box className="p-4 rounded-lg bg-black/5 dark:bg-white/5">
+                  <Typography variant="subtitle2" color="text.secondary">
+                    إجمالي المخزون
+                  </Typography>
+                  <Typography variant="h4" className="mt-1">
+                    {data.total.toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box className="p-4 rounded-lg bg-error/10">
+                  <Typography variant="subtitle2" color="error">
+                    منتجات منخفضة المخزون
+                  </Typography>
+                  <Typography variant="h4" className="mt-1" color="error">
+                    {data.lowStock.toLocaleString()}
+                  </Typography>
+                </Box>
+              </Box>
 
-        <div className="h-[300px] mb-6">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data.history}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={theme.palette.divider}
-              />
-              <XAxis
-                dataKey="date"
-                stroke={theme.palette.text.secondary}
-                tick={{ fill: theme.palette.text.secondary }}
-              />
-              <YAxis
-                stroke={theme.palette.text.secondary}
-                tick={{ fill: theme.palette.text.secondary }}
-              />
-              <RechartsTooltip
-                contentStyle={{
-                  backgroundColor: theme.palette.background.paper,
-                  border: `1px solid ${theme.palette.divider}`,
-                }}
-                formatter={(value: number) => [value.toLocaleString(), ""]}
-                labelStyle={{ color: theme.palette.text.primary }}
-              />
-              <Bar
-                dataKey="added"
-                name="تمت الإضافة"
-                fill={theme.palette.success.main}
-                opacity={0.8}
-              />
-              <Bar
-                dataKey="removed"
-                name="تم السحب"
-                fill={theme.palette.error.main}
-                opacity={0.8}
-              />
-              <Line
-                type="monotone"
-                dataKey="inStock"
-                name="المخزون"
-                stroke={theme.palette.primary.main}
-                strokeWidth={2}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
+              <div className="h-[300px] mb-6">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={data.history}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke={theme.palette.divider}
+                    />
+                    <XAxis
+                      dataKey="date"
+                      stroke={theme.palette.text.secondary}
+                      tick={{ fill: theme.palette.text.secondary }}
+                    />
+                    <YAxis
+                      stroke={theme.palette.text.secondary}
+                      tick={{ fill: theme.palette.text.secondary }}
+                    />
+                    <RechartsTooltip
+                      contentStyle={{
+                        backgroundColor: theme.palette.background.paper,
+                        border: `1px solid ${theme.palette.divider}`,
+                      }}
+                      formatter={(value: number) => [value.toLocaleString(), ""]}
+                      labelStyle={{ color: theme.palette.text.primary }}
+                    />
+                    <Bar
+                      dataKey="added"
+                      name="تمت الإضافة"
+                      fill={theme.palette.success.main}
+                      opacity={0.8}
+                    />
+                    <Bar
+                      dataKey="removed"
+                      name="تم السحب"
+                      fill={theme.palette.error.main}
+                      opacity={0.8}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="inStock"
+                      name="المخزون"
+                      stroke={theme.palette.primary.main}
+                      strokeWidth={2}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
 
-        {data.lowStockProducts.length > 0 && (
-          <Box>
-            <Typography variant="subtitle2" className="mb-2">
-              المنتجات منخفضة المخزون
-            </Typography>
-            <div className="flex flex-wrap gap-2">
-              {data.lowStockProducts.map((product) => (
-                <Tooltip
-                  key={product.id}
-                  title={`الكمية الحالية: ${product.quantity} | الحد الأدنى: ${product.minQuantity}`}
-                >
-                  <Chip
-                    label={product.name}
-                    color="error"
-                    variant="outlined"
-                    size="small"
-                  />
-                </Tooltip>
-              ))}
-            </div>
-          </Box>
-        )}
+              {data.lowStockProducts.length > 0 && (
+                <Box>
+                  <Typography variant="subtitle2" className="mb-2">
+                    المنتجات منخفضة المخزون
+                  </Typography>
+                  <div className="flex flex-wrap gap-2">
+                    {data.lowStockProducts.map((product) => (
+                      <Tooltip
+                        key={product.id}
+                        title={`الكمية الحالية: ${product.quantity} | الحد الأدنى: ${product.minQuantity}`}
+                      >
+                        <Chip
+                          label={product.name}
+                          color="error"
+                          variant="outlined"
+                          size="small"
+                        />
+                      </Tooltip>
+                    ))}
+                  </div>
+                </Box>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </CardContent>
     </Card>
   );

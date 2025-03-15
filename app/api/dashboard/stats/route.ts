@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/auth';
-import { addDays, startOfDay, endOfDay, subDays, format, subMonths, subYears } from 'date-fns';
+import { addDays, startOfDay, endOfDay, subDays, format, subMonths, subYears ,Locale} from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 // دالة مساعدة للحصول على نطاق التاريخ
@@ -11,20 +11,31 @@ function getDateRange(range: string, date: string) {
   let endDate = endOfDay(currentDate);
   let previousStartDate;
   let previousEndDate;
+  let interval: 'hour' | 'day' | 'week' | 'month' = 'day';
 
   switch (range) {
+    case 'day':
+      interval = 'hour';
+      startDate = startOfDay(currentDate);
+      endDate = endOfDay(currentDate);
+      previousStartDate = subDays(startDate, 1);
+      previousEndDate = subDays(endDate, 1);
+      break;
     case 'week':
+      interval = 'day';
       startDate = subDays(startDate, 6);
       previousStartDate = subDays(startDate, 7);
       previousEndDate = subDays(startDate, 1);
       break;
     case 'month':
+      interval = 'week';
       startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
       previousStartDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
       previousEndDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
       break;
     case 'year':
+      interval = 'month';
       startDate = new Date(currentDate.getFullYear(), 0, 1);
       endDate = new Date(currentDate.getFullYear(), 11, 31);
       previousStartDate = new Date(currentDate.getFullYear() - 1, 0, 1);
@@ -32,7 +43,23 @@ function getDateRange(range: string, date: string) {
       break;
   }
 
-  return { startDate, endDate, previousStartDate, previousEndDate };
+  return { startDate, endDate, previousStartDate, previousEndDate, interval };
+}
+
+// دالة للحصول على تنسيق التاريخ المناسب حسب النطاق
+function getDateFormat(interval: string, locale: Locale = ar): string {
+  switch (interval) {
+    case 'hour':
+      return 'HH:mm';
+    case 'day':
+      return 'dd MMM';
+    case 'week':
+      return "'أسبوع' w, MMM";
+    case 'month':
+      return 'MMM yyyy';
+    default:
+      return 'dd MMM yyyy';
+  }
 }
 
 // دالة لحساب نسبة النمو
@@ -104,265 +131,313 @@ export async function GET(request: Request) {
       return new NextResponse("غير مصرح", { status: 401 });
     }
 
-    // استخراج معلمات التصفية من URL
     const { searchParams } = new URL(request.url);
     const range = searchParams.get('range') || 'week';
     const date = searchParams.get('date') || new Date().toISOString();
+    const type = searchParams.get('type') || 'all';
 
-    const { startDate, endDate, previousStartDate, previousEndDate } = getDateRange(range, date);
+    const { startDate, endDate, previousStartDate, previousEndDate, interval } = getDateRange(range, date);
+    const dateFormat = getDateFormat(interval);
 
-    const [
-      // الإحصائيات الأساسية
-      inventoryStats,
-      activeVehicles,
-      todaySales,
-      treasury,
+    let response: any = {};
 
-      // إحصائيات إضافية
-      customersCount,
-      suppliersCount,
-      productsCount,
-
-      // إحصائيات المبيعات والإنتاج
-      productionHistory,
-      salesHistory,
-      currentSales,
-      previousSales,
-
-      // إحصائيات المخزون والموارد
-      lowStockProducts,
-      materialStats,
-      inventoryHistory,
-
-      // إحصائيات الموظفين والمركبات
-      activeDrivers,
-      deliveryStats
-    ] = await Promise.all([
-      // الإحصائيات الأساسية
-      prisma.product.aggregate({
-        _sum: { quantity: true }
-      }),
-      prisma.vehicle.count({
-        where: { status: 'ACTIVE' }
-      }),
-      prisma.sale.aggregate({
-        where: { date: { gte: startOfDay(new Date()) } },
-        _sum: { total: true }
-      }),
-      prisma.transaction.aggregate({
-        _sum: { amount: true }
-      }),
-
-      // إحصائيات إضافية
-      prisma.customer.count(),
-      prisma.supplier.count(),
-      prisma.product.count(),
-
-      // إحصائيات الإنتاج والمبيعات
-      prisma.materialTransaction.groupBy({
-        by: ['createdAt'],
-        where: {
-          type: 'OUT',
-          createdAt: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-        _sum: {
-          quantity: true,
-        },
-      }),
-
-      prisma.sale.groupBy({
-        by: ['date'],
-        where: {
-          date: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-        _sum: {
-          total: true,
-        },
-        _count: true,
-      }),
-
-      // المبيعات الحالية
-      prisma.sale.aggregate({
-        where: {
-          date: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-        _sum: {
-          total: true,
-        },
-        _count: true,
-      }),
-
-      // المبيعات السابقة
-      prisma.sale.aggregate({
-        where: {
-          date: {
-            gte: previousStartDate,
-            lte: previousEndDate,
-          },
-        },
-        _sum: {
-          total: true,
-        },
-        _count: true,
-      }),
-
-      // المنتجات منخفضة المخزون
-      prisma.product.findMany({
-        where: {
-          quantity: { lte: prisma.product.fields.minQuantity }
-        },
-        select: {
-          id: true,
-          name: true,
-          quantity: true,
-          minQuantity: true
-        }
-      }),
-
-      // إحصائيات المواد الخام
-      prisma.material.groupBy({
-        by: ['type'],
-        _sum: { quantity: true }
-      }),
-
-      // سجل حركة المخزون
-      prisma.stockMovement.groupBy({
-        by: ['createdAt', 'type'],
-        where: {
-          createdAt: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-        _sum: {
-          quantity: true,
-        },
-      }),
-
-      // السائقين النشطين
-      prisma.driver.count({
-        where: { status: 'ACTIVE' }
-      }),
-
-      // إحصائيات التوصيل
-      prisma.delivery.groupBy({
-        by: ['status'],
-        _count: true,
-      })
-    ]);
-
-    // حساب نمو المبيعات والطلبات
-    const currentRevenue = currentSales._sum.total || 0;
-    const previousRevenue = previousSales._sum.total || 0;
-    const currentOrders = currentSales._count || 0;
-    const previousOrders = previousSales._count || 0;
-
-    const revenueGrowth = calculateGrowth(currentRevenue, previousRevenue);
-    const ordersGrowth = calculateGrowth(currentOrders, previousOrders);
-
-    // إرسال إشعارات WhatsApp للمنتجات منخفضة المخزون
-    for (const product of lowStockProducts) {
-      if (product.quantity <= product.minQuantity) {
-        await sendWhatsAppNotification(product);
-      }
+    switch (type) {
+      case 'sales':
+        const salesData = await getSalesAnalytics(startDate!, endDate!, previousStartDate!, previousEndDate!, interval, dateFormat);
+        response = salesData;
+        break;
+      
+      case 'inventory':
+        const inventoryData = await getInventoryAnalytics(startDate, endDate, interval, dateFormat);
+        response = inventoryData;
+        break;
+      
+      case 'production':
+        const productionData = await getProductionAnalytics(startDate, endDate, interval, dateFormat);
+        response = productionData;
+        break;
+      
+      case 'basic':
+        const basicStats = await getBasicStats();
+        response = basicStats;
+        break;
+      
+      default:
+        // الحصول على جميع البيانات
+        const [sales, inventory, production, basic] = await Promise.all([
+          getSalesAnalytics(startDate, endDate, previousStartDate! , previousEndDate!, interval, dateFormat),
+          getInventoryAnalytics(startDate, endDate, interval, dateFormat),
+          getProductionAnalytics(startDate, endDate, interval, dateFormat),
+          getBasicStats()
+        ]);
+        
+        response = {
+          ...sales,
+          ...inventory,
+          ...production,
+          ...basic
+        };
     }
 
-    // تنظيم بيانات سجل المخزون
-    const inventoryHistoryMap = new Map();
-    let currentStock = inventoryStats._sum.quantity || 0;
+    return NextResponse.json(response);
 
-    inventoryHistory.forEach((record) => {
-      const date = format(record.createdAt, 'yyyy-MM-dd', { locale: ar });
-      if (!inventoryHistoryMap.has(date)) {
-        inventoryHistoryMap.set(date, {
-          date,
-          inStock: currentStock,
-          added: 0,
-          removed: 0,
-        });
-      }
-
-      const entry = inventoryHistoryMap.get(date);
-      if (record.type === 'PURCHASE') {
-        entry.added += record._sum.quantity || 0;
-      } else if (record.type === 'SALE') {
-        entry.removed += record._sum.quantity || 0;
-      }
-    });
-
-    // تحويل التوصيلات إلى التنسيق المطلوب
-    const deliveries = deliveryStats.map((stat) => ({
-      status: stat.status,
-      count: stat._count,
-    }));
-
-    return NextResponse.json({
-      // الإحصائيات الأساسية
-      inventory: {
-        total: inventoryStats._sum.quantity || 0,
-        lowStock: lowStockProducts.length,
-        history: Array.from(inventoryHistoryMap.values()),
-      },
-      vehicles: {
-        active: activeVehicles,
-        pendingDeliveries: deliveries.find((d) => d.status === 'PENDING')?.count || 0,
-      },
-      sales: {
-        today: todaySales._sum.total || 0,
-        totalRevenue: currentRevenue,
-        totalOrders: currentOrders,
-        growth: {
-          revenue: revenueGrowth,
-          orders: ordersGrowth,
-        },
-        history: salesHistory.map((record) => ({
-          date: format(record.date, 'yyyy-MM-dd', { locale: ar }),
-          revenue: record._sum.total || 0,
-          orders: record._count || 0,
-          averageOrderValue: record._sum.total && record._count
-            ? record._sum.total / record._count
-            : 0,
-        })),
-      },
-      treasury: treasury._sum.amount || 0,
-
-      // إحصائيات عامة
-      counts: {
-        customers: customersCount,
-        suppliers: suppliersCount,
-        products: productsCount,
-        activeDrivers
-      },
-
-      // إحصائيات الإنتاج
-      production: {
-        history: productionHistory.map((record) => ({
-          date: format(record.createdAt, 'yyyy-MM-dd', { locale: ar }),
-          quantity: record._sum.quantity || 0,
-        })),
-        materials: materialStats,
-      },
-
-      // معلومات تحليلية
-      analytics: {
-        lowStockProducts,
-        deliveries,
-      },
-
-      // الوقت والتحديث
-      lastUpdate: new Date().toISOString()
-    });
   } catch (error) {
     console.error('خطأ في جلب إحصائيات لوحة التحكم:', error);
     return new NextResponse("خطأ داخلي في الخادم", { status: 500 });
   }
+}
+
+// دوال مساعدة للحصول على البيانات
+async function getBasicStats() {
+  const [
+    inventoryStats,
+    activeVehicles,
+    todaySales,
+    treasury,
+    customersCount,
+    suppliersCount,
+    productsCount,
+    activeDrivers
+  ] = await Promise.all([
+    prisma.product.aggregate({
+      _sum: { quantity: true }
+    }),
+    prisma.vehicle.count({
+      where: { status: 'ACTIVE' }
+    }),
+    prisma.sale.aggregate({
+      where: { date: { gte: startOfDay(new Date()) } },
+      _sum: { total: true }
+    }),
+    prisma.transaction.aggregate({
+      _sum: { amount: true }
+    }),
+    prisma.customer.count(),
+    prisma.supplier.count(),
+    prisma.product.count(),
+    prisma.driver.count({
+      where: { status: 'ACTIVE' }
+    })
+  ]);
+
+  return {
+    inventory: {
+      total: inventoryStats._sum.quantity || 0
+    },
+    vehicles: {
+      active: activeVehicles
+    },
+    sales: {
+      today: todaySales._sum.total || 0
+    },
+    treasury: treasury._sum.amount || 0,
+    counts: {
+      customers: customersCount,
+      suppliers: suppliersCount,
+      products: productsCount,
+      activeDrivers
+    }
+  };
+}
+
+async function getSalesAnalytics(startDate: Date, endDate: Date, previousStartDate: Date, previousEndDate: Date, interval: string, dateFormat: string) {
+  const [currentSales, previousSales, salesHistory] = await Promise.all([
+    prisma.sale.aggregate({
+      where: {
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      _sum: {
+        total: true,
+      },
+      _count: true,
+    }),
+    prisma.sale.aggregate({
+      where: {
+        date: {
+          gte: previousStartDate,
+          lte: previousEndDate,
+        },
+      },
+      _sum: {
+        total: true,
+      },
+      _count: true,
+    }),
+    prisma.sale.groupBy({
+      by: ['date'],
+      where: {
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      _sum: {
+        total: true,
+      },
+      _count: true,
+    })
+  ]);
+
+  const currentRevenue = currentSales._sum.total || 0;
+  const previousRevenue = previousSales._sum.total || 0;
+  const currentOrders = currentSales._count || 0;
+  const previousOrders = previousSales._count || 0;
+
+  return {
+    totalRevenue: currentRevenue,
+    totalOrders: currentOrders,
+    growth: {
+      revenue: calculateGrowth(currentRevenue, previousRevenue),
+      orders: calculateGrowth(currentOrders, previousOrders),
+    },
+    history: salesHistory.map((record) => ({
+      date: format(record.date, dateFormat, { locale: ar }),
+      revenue: record._sum.total || 0,
+      orders: record._count || 0,
+      averageOrderValue: record._sum.total && record._count
+        ? record._sum.total / record._count
+        : 0,
+    })),
+  };
+}
+
+async function getInventoryAnalytics(startDate: Date, endDate: Date, interval: string, dateFormat: string) {
+  const [inventoryStats, lowStockProducts, inventoryHistory] = await Promise.all([
+    prisma.product.aggregate({
+      _sum: { quantity: true }
+    }),
+    prisma.product.findMany({
+      where: {
+        quantity: { lte: prisma.product.fields.minQuantity }
+      },
+      select: {
+        id: true,
+        name: true,
+        quantity: true,
+        minQuantity: true
+      }
+    }),
+    prisma.stockMovement.groupBy({
+      by: ['createdAt', 'type'],
+      where: {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      _sum: {
+        quantity: true,
+      },
+    })
+  ]);
+
+  // تنظيم بيانات سجل المخزون
+  const inventoryHistoryMap = new Map();
+  let currentStock = inventoryStats._sum.quantity || 0;
+
+  inventoryHistory.forEach((record) => {
+    const date = format(record.createdAt, dateFormat, { locale: ar });
+    if (!inventoryHistoryMap.has(date)) {
+      inventoryHistoryMap.set(date, {
+        date,
+        inStock: currentStock,
+        added: 0,
+        removed: 0,
+      });
+    }
+
+    const entry = inventoryHistoryMap.get(date);
+    if (record.type === 'PURCHASE') {
+      entry.added += record._sum.quantity || 0;
+    } else if (record.type === 'SALE') {
+      entry.removed += record._sum.quantity || 0;
+    }
+  });
+
+  return {
+    total: inventoryStats._sum.quantity || 0,
+    lowStock: lowStockProducts.length,
+    lowStockProducts,
+    history: Array.from(inventoryHistoryMap.values()),
+  };
+}
+
+async function getProductionAnalytics(startDate: Date, endDate: Date, interval: string, dateFormat: string) {
+  const [productionHistory, materialHistory, currentStock] = await Promise.all([
+    prisma.materialTransaction.groupBy({
+      by: ['createdAt'],
+      where: {
+        type: 'OUT',
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      _sum: {
+        quantity: true,
+      },
+    }),
+    prisma.materialTransaction.groupBy({
+      by: ['createdAt', 'materialId'],
+      where: {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      _sum: {
+        quantity: true,
+      },
+    }),
+    prisma.material.findMany({
+      select: {
+        id: true,
+        type: true,
+        quantity: true,
+        unit: true,
+      },
+    })
+  ]);
+
+  // تنظيم بيانات المواد حسب التاريخ
+  const materialsMap = new Map();
+  
+  materialHistory.forEach((record) => {
+    const date = format(record.createdAt, dateFormat, { locale: ar });
+    if (!materialsMap.has(date)) {
+      materialsMap.set(date, {
+        date,
+        materials: [],
+      });
+    }
+    
+    const entry = materialsMap.get(date);
+    const material = currentStock.find(m => m.id === record.materialId);
+    
+    if (material) {
+      entry.materials.push({
+        type: material.type,
+        quantity: record._sum.quantity || 0,
+        unit: material.unit,
+      });
+    }
+  });
+
+  return {
+    history: productionHistory.map((record) => ({
+      date: format(record.createdAt, dateFormat, { locale: ar }),
+      quantity: record._sum.quantity || 0,
+    })),
+    materials: {
+      history: Array.from(materialsMap.values()),
+      currentStock: currentStock.map(material => ({
+        type: material.type,
+        quantity: material.quantity,
+        unit: material.unit,
+      })),
+    },
+  };
 }

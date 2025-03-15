@@ -523,6 +523,8 @@ enum MaterialType {
 
 enum UnitType {
   KG        // كيلوجرام
+  METER     // متر
+  TONNE     // طن
   GRAM      // جرام
   LITER     // لتر
   PIECE     // قطعة

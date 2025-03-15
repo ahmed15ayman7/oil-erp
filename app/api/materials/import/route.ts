@@ -32,6 +32,8 @@ const TYPE_MAPPING = {
 const UNIT_MAPPING = {
   'كيلوجرام': 'KG',
   'جرام': 'GRAM',
+  'متر': 'METER',
+  'طن': 'TONNE',
   'لتر': 'LITER',
   'قطعة': 'PIECE',
   'صندوق': 'BOX'

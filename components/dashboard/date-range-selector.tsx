@@ -6,6 +6,8 @@ import {
   ToggleButton,
   IconButton,
   Tooltip,
+  Menu,
+  MenuItem,
 } from "@mui/material";
 import {
   IconChevronLeft,
@@ -13,6 +15,8 @@ import {
   IconCalendar,
 } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
+import { format, addDays, subDays, startOfWeek, endOfWeek, addWeeks, subWeeks, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import { ar } from "date-fns/locale";
 
 export type DateRange = "day" | "week" | "month" | "year";
 
@@ -29,12 +33,31 @@ export function DateRangeSelector({
   onDateChange,
   currentDate,
 }: DateRangeSelectorProps) {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
   const handleRangeChange = (
     event: React.MouseEvent<HTMLElement>,
     newRange: DateRange | null
   ) => {
     if (newRange) {
       onRangeChange(newRange);
+      // تحديث التاريخ عند تغيير النطاق
+      let newDate = new Date(currentDate);
+      switch (newRange) {
+        case "day":
+          newDate = new Date(); // اليوم الحالي
+          break;
+        case "week":
+          newDate = startOfWeek(new Date(), { locale: ar }); // بداية الأسبوع الحالي
+          break;
+        case "month":
+          newDate = startOfMonth(new Date()); // بداية الشهر الحالي
+          break;
+        case "year":
+          newDate = startOfYear(new Date()); // بداية السنة الحالية
+          break;
+      }
+      onDateChange(newDate);
     }
   };
 
@@ -59,21 +82,61 @@ export function DateRangeSelector({
 
   const handleNext = () => {
     const newDate = new Date(currentDate);
+    const today = new Date();
+    let canAdvance = true;
+
     switch (range) {
       case "day":
         newDate.setDate(newDate.getDate() + 1);
+        canAdvance = newDate <= today;
         break;
       case "week":
         newDate.setDate(newDate.getDate() + 7);
+        canAdvance = startOfWeek(newDate, { locale: ar }) <= today;
         break;
       case "month":
         newDate.setMonth(newDate.getMonth() + 1);
+        canAdvance = startOfMonth(newDate) <= today;
         break;
       case "year":
         newDate.setFullYear(newDate.getFullYear() + 1);
+        canAdvance = startOfYear(newDate) <= today;
+        break;
+    }
+
+    if (canAdvance) {
+      onDateChange(newDate);
+    }
+  };
+
+  const handleCalendarClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleQuickSelect = (option: string) => {
+    let newDate = new Date();
+    switch (option) {
+      case "today":
+        break;
+      case "yesterday":
+        newDate = subDays(newDate, 1);
+        break;
+      case "lastWeek":
+        newDate = subWeeks(newDate, 1);
+        break;
+      case "lastMonth":
+        newDate = subMonths(newDate, 1);
+        break;
+      case "lastYear":
+        newDate = subYears(newDate, 1);
         break;
     }
     onDateChange(newDate);
+    handleMenuClose();
   };
 
   const formatDate = () => {
@@ -85,27 +148,19 @@ export function DateRangeSelector({
 
     switch (range) {
       case "day":
-        return new Intl.DateTimeFormat("ar-EG", options).format(currentDate);
+        return format(currentDate, "dd MMMM yyyy", { locale: ar });
       case "week":
-        const weekStart = new Date(currentDate);
-        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-        return `${new Intl.DateTimeFormat("ar-EG", {
-          day: "numeric",
-          month: "short",
-        }).format(weekStart)} - ${new Intl.DateTimeFormat("ar-EG", options).format(
-          weekEnd
+        const weekStart = startOfWeek(currentDate, { locale: ar });
+        const weekEnd = endOfWeek(currentDate, { locale: ar });
+        return `${format(weekStart, "dd", { locale: ar })} - ${format(
+          weekEnd,
+          "dd MMMM yyyy",
+          { locale: ar }
         )}`;
       case "month":
-        return new Intl.DateTimeFormat("ar-EG", {
-          month: "long",
-          year: "numeric",
-        }).format(currentDate);
+        return format(currentDate, "MMMM yyyy", { locale: ar });
       case "year":
-        return new Intl.DateTimeFormat("ar-EG", {
-          year: "numeric",
-        }).format(currentDate);
+        return format(currentDate, "yyyy", { locale: ar });
     }
   };
 
@@ -128,12 +183,41 @@ export function DateRangeSelector({
           <IconChevronRight size={20} />
         </IconButton>
 
-        <Tooltip title="التاريخ الحالي">
-          <Box className="flex items-center gap-1 px-2 py-1 rounded-md bg-black/5 dark:bg-white/5">
+        <Tooltip title="اختيار سريع">
+          <Box
+            className="flex items-center gap-1 px-2 py-1 rounded-md bg-black/5 dark:bg-white/5 cursor-pointer"
+            onClick={handleCalendarClick}
+          >
             <IconCalendar size={16} />
             <span className="text-sm">{formatDate()}</span>
           </Box>
         </Tooltip>
+
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleMenuClose}
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "left",
+          }}
+        >
+          <MenuItem onClick={() => handleQuickSelect("today")}>
+            اليوم
+          </MenuItem>
+          <MenuItem onClick={() => handleQuickSelect("yesterday")}>
+            الأمس
+          </MenuItem>
+          <MenuItem onClick={() => handleQuickSelect("lastWeek")}>
+            الأسبوع الماضي
+          </MenuItem>
+          <MenuItem onClick={() => handleQuickSelect("lastMonth")}>
+            الشهر الماضي
+          </MenuItem>
+          <MenuItem onClick={() => handleQuickSelect("lastYear")}>
+            السنة الماضية
+          </MenuItem>
+        </Menu>
 
         <IconButton
           onClick={handleNext}

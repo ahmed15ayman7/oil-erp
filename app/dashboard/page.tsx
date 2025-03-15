@@ -31,8 +31,8 @@ const container = {
 const item = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0 },
-
 };
+
 export default function DashboardPage() {
   const queryClient = useQueryClient();
   const theme = useTheme();
@@ -42,28 +42,52 @@ export default function DashboardPage() {
   const [dateRange, setDateRange] = useState<DateRange>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // استخدام React Query لجلب البيانات مع تحسين الأداء
-  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
-    queryKey: ["dashboardStats", dateRange, currentDate],
-    queryFn: () =>
-      fetch(`/api/dashboard/stats?range=${dateRange}&date=${currentDate.toISOString()}`)
-        .then((res) => res.json()),
+  // استخدام React Query لجلب البيانات الأساسية
+  const { data: basicStats, isLoading: basicStatsLoading } = useQuery({
+    queryKey: ["dashboardBasicStats"],
+    queryFn: () => fetch(`/api/dashboard/stats?type=basic`).then((res) => res.json()),
     refetchInterval: 30000,
-    staleTime: 10000, // البيانات تبقى طازجة لمدة 10 ثواني
-    gcTime: 5 * 60 * 1000, // تخزين مؤقت لمدة 5 دقائق
+    staleTime: 10000,
   });
 
-  // جلب بيانات التصنيفات والوحدات بشكل منفصل
+  // جلب بيانات المبيعات
+  const { data: salesData, isLoading: salesLoading } = useQuery({
+    queryKey: ["dashboardSales", dateRange, currentDate],
+    queryFn: () =>
+      fetch(`/api/dashboard/stats?type=sales&range=${dateRange}&date=${currentDate.toISOString()}`).then((res) => res.json()),
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+
+  // جلب بيانات المخزون
+  const { data: inventoryData, isLoading: inventoryLoading } = useQuery({
+    queryKey: ["dashboardInventory", dateRange, currentDate],
+    queryFn: () =>
+      fetch(`/api/dashboard/stats?type=inventory&range=${dateRange}&date=${currentDate.toISOString()}`).then((res) => res.json()),
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+
+  // جلب بيانات الإنتاج
+  const { data: productionData, isLoading: productionLoading } = useQuery({
+    queryKey: ["dashboardProduction", dateRange, currentDate],
+    queryFn: () =>
+      fetch(`/api/dashboard/stats?type=production&range=${dateRange}&date=${currentDate.toISOString()}`).then((res) => res.json()),
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+
+  // جلب بيانات التصنيفات والوحدات
   const { data: categories, isLoading: categoriesLoading, refetch: refetchCategories } = useQuery({
     queryKey: ["categories"],
     queryFn: () => fetch("/api/categories").then((res) => res.json()),
-    staleTime: 5 * 60 * 1000, // تخزين مؤقت لمدة 5 دقائق
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: units, isLoading: unitsLoading, refetch: refetchUnits } = useQuery({
     queryKey: ["units"],
     queryFn: () => fetch("/api/units").then((res) => res.json()),
-    staleTime: 5 * 60 * 1000, // تخزين مؤقت لمدة 5 دقائق
+    staleTime: 5 * 60 * 1000,
   });
 
   // إعداد WebSocket للتحديثات المباشرة
@@ -72,10 +96,10 @@ export default function DashboardPage() {
     onMessage: (data: string) => {
       const parsedData = JSON.parse(data);
       if (parsedData.type === 'stats') {
-        queryClient.setQueryData(["dashboardStats", dateRange, currentDate], (oldData: any) => ({
-          ...oldData,
-          ...parsedData.data,
-        }));
+        queryClient.invalidateQueries({ queryKey: ["dashboardBasicStats"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboardSales"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboardInventory"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboardProduction"] });
       } else if (parsedData.type === 'categories') {
         refetchCategories();
       } else if (parsedData.type === 'units') {
@@ -89,39 +113,35 @@ export default function DashboardPage() {
     setCurrentDate(date);
   };
 
-  if (statsError) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-error">حدث خطأ أثناء تحميل البيانات</p>
-      </div>
-    );
-  }
+  const isBasicLoading = basicStatsLoading;
 
-  const isLoading = statsLoading || categoriesLoading || unitsLoading;
   const statCards = [
     {
       title: "رصيد الخزنة",
-      value: !isLoading ? stats.treasury.toLocaleString("ar-EG", {
+      value: !isBasicLoading ? basicStats?.treasury.toLocaleString("ar-EG", {
         style: "currency",
         currency: "EGP",
       }) : "0",
       icon: <IconReportMoney className="w-8 h-8" />,
       color: "warning.main",
+      isLoading: isBasicLoading,
     },
     {
       title: "العملاء",
-      value: !isLoading ? stats.counts.customers.toLocaleString() : "0",
+      value: !isBasicLoading ? basicStats?.counts.customers.toLocaleString() : "0",
       icon: <IconUsers className="w-8 h-8" />,
       color: "secondary.main",
+      isLoading: isBasicLoading,
     },
     {
       title: "المنتجات",
-      value: !isLoading ? stats.counts.products.toLocaleString() : "0",
+      value: !isBasicLoading ? basicStats?.counts.products.toLocaleString() : "0",
       icon: <IconPackage className="w-8 h-8" />,
       color: "error.main",
+      isLoading: isBasicLoading,
     },
   ];
-  console.log(stats)
+
   return (
     <AnimatePresence>
       <motion.div
@@ -132,14 +152,13 @@ export default function DashboardPage() {
       >
         <PageHeader title="لوحة التحكم" />
 
-        {isLoading ? (
+        {isBasicLoading ? (
           <LoadingOverlay />
         ) : (
           <>
-            <DashboardStats stats={stats} />
+            <DashboardStats stats={basicStats} />
 
             <Grid container spacing={3}>
-
               <Grid item xs={12} md={4}>
                 <motion.div
                   variants={container}
@@ -158,6 +177,7 @@ export default function DashboardPage() {
                   </Grid>
                 </motion.div>
               </Grid>
+
               <Grid item xs={12} md={8}>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -166,8 +186,9 @@ export default function DashboardPage() {
                   className="h-full"
                 >
                   <ProductionChart
-                    data={stats.production}
+                    data={productionData || { history: [] }}
                     onDateRangeChange={handleDateRangeChange}
+                    isLoading={productionLoading}
                   />
                 </motion.div>
               </Grid>
@@ -180,13 +201,13 @@ export default function DashboardPage() {
                   className="h-full"
                 >
                   <SalesAnalytics
-                    data={stats.sales}
+                    data={salesData || { history: [] }}
                     onDateRangeChange={handleDateRangeChange}
+                    isLoading={salesLoading}
                   />
                 </motion.div>
               </Grid>
 
-              {/* المخزون والموارد */}
               <Grid item xs={12} md={6}>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -195,8 +216,9 @@ export default function DashboardPage() {
                   className="h-full"
                 >
                   <InventoryStatus
-                    data={{ ...stats.inventory, lowStockProducts: stats.analytics.lowStockProducts }}
+                    data={inventoryData || { history: [], lowStockProducts: [] }}
                     onDateRangeChange={handleDateRangeChange}
+                    isLoading={inventoryLoading}
                   />
                 </motion.div>
               </Grid>
@@ -208,11 +230,14 @@ export default function DashboardPage() {
                   transition={{ delay: 0.5 }}
                   className="h-full"
                 >
-                  <MaterialsUsage data={stats.production.materials} />
+                  <MaterialsUsage
+                    data={productionData?.materials || { history: [], currentStock: [] }}
+                    onDateRangeChange={handleDateRangeChange}
+                    isLoading={productionLoading}
+                  />
                 </motion.div>
               </Grid>
 
-              {/* التوصيل */}
               <Grid item xs={12}>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -220,14 +245,15 @@ export default function DashboardPage() {
                   transition={{ delay: 0.6 }}
                   className="h-full"
                 >
-                  <DeliveryStatus
-                    vehicles={stats.vehicles}
-                    deliveries={stats.analytics.deliveries}
+                {!isBasicLoading && (<DeliveryStatus
+                    vehicles={basicStats?.vehicles || []}
+                    deliveries={basicStats?.deliveries || []}
+                    
                   />
+                  )}
                 </motion.div>
               </Grid>
 
-              {/* إدارة التصنيفات والوحدات */}
               <Grid item xs={12} md={6}>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -238,6 +264,7 @@ export default function DashboardPage() {
                   <CategoriesManagement
                     categories={categories}
                     onUpdate={refetchCategories}
+                    isLoading={categoriesLoading}
                   />
                 </motion.div>
               </Grid>
@@ -249,10 +276,10 @@ export default function DashboardPage() {
                   transition={{ delay: 0.8 }}
                   className="h-full"
                 >
-                  <UnitsManagement
+                 {!unitsLoading && (<UnitsManagement
                     units={units}
                     onUpdate={refetchUnits}
-                  />
+                  />)}
                 </motion.div>
               </Grid>
             </Grid>

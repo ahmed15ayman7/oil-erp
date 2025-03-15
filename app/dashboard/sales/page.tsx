@@ -247,7 +247,7 @@ let statuses = [{id:'UNPAID',name:'غير مدفوعة'},{id:'PAID',name:'مدف
               placeholder="البحث في الفواتير..."
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={3}>
             <Autocomplete
               options={statuses || []}
               getOptionLabel={(option) => option.name}

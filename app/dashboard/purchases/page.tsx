@@ -182,13 +182,13 @@ const deliveryStatuses=[{id:'DELIVERED',name:'تم التوريد'},{id:'PARTIAL
 
       <Box className="mb-6">
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={5}>
             <SearchInput
               onSearch={setSearchQuery}
               placeholder="البحث في المشتريات..."
             />
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={3}>
             <TextField
               select
               fullWidth
@@ -204,7 +204,7 @@ const deliveryStatuses=[{id:'DELIVERED',name:'تم التوريد'},{id:'PARTIAL
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={3}>
             <TextField
               select
               fullWidth

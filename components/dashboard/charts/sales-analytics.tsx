@@ -47,6 +47,31 @@ interface SalesAnalyticsProps {
   isLoading?: boolean;
 }
 
+// إضافة مكون التحميل للرسم البياني
+const ChartLoadingAnimation = () => {
+  const theme = useTheme();
+  return (
+    <svg width="100%" height="300">
+      <motion.path
+        d="M0,150 C100,100 200,200 300,150 C400,100 500,200 600,150"
+        fill="none"
+        stroke={theme.palette.primary.main}
+        strokeWidth="2"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{
+          pathLength: 1,
+          opacity: 0.3,
+          transition: {
+            duration: 2,
+            ease: "easeInOut",
+            repeat: Infinity,
+          },
+        }}
+      />
+    </svg>
+  );
+};
+
 export function SalesAnalytics({ data, onDateRangeChange, isLoading = false }: SalesAnalyticsProps) {
   const theme = useTheme();
   const queryClient = useQueryClient();
@@ -83,14 +108,6 @@ export function SalesAnalytics({ data, onDateRangeChange, isLoading = false }: S
     growth: data.growth || { revenue: 0, orders: 0 }
   }), [data.totalRevenue, data.totalOrders, data.growth]);
 
-  // مكون الهيكل العظمي للتحميل
-  const LoadingSkeleton = () => (
-    <Box className="space-y-4">
-      <Skeleton variant="rectangular" height={100} />
-      <Skeleton variant="rectangular" height={300} />
-    </Box>
-  );
-
   return (
     <Card
       component={motion.div}
@@ -114,7 +131,21 @@ export function SalesAnalytics({ data, onDateRangeChange, isLoading = false }: S
       <CardContent>
         <AnimatePresence mode="wait">
           {(isLoading || isChangingRange) ? (
-            <LoadingSkeleton />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Box className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {[1, 2, 3].map((i) => (
+                  <Box key={i} className="p-4 rounded-lg bg-black/5 dark:bg-white/5">
+                    <Skeleton variant="text" width={120} height={24} />
+                    <Skeleton variant="text" width={150} height={32} className="mt-1" />
+                  </Box>
+                ))}
+              </Box>
+              <ChartLoadingAnimation />
+            </motion.div>
           ) : (
             <motion.div
               initial={{ opacity: 0 }}

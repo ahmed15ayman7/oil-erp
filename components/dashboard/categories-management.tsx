@@ -31,6 +31,7 @@ import {
 } from "@tabler/icons-react";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
+import { LoadingOverlay } from "../loading-overlay";
 
 interface Category {
   id: string;
@@ -52,11 +53,13 @@ interface Categories {
 interface CategoriesManagementProps {
   categories: Categories;
   onUpdate: () => void;
+  isLoading: boolean;
 }
 
 export function CategoriesManagement({
   categories,
   onUpdate,
+  isLoading,
 }: CategoriesManagementProps) {
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -200,9 +203,11 @@ export function CategoriesManagement({
               إضافة تصنيف
             </Button>
           </div>
-
-          <List>
-            <AnimatePresence>
+          {isLoading ? (
+            <LoadingOverlay />
+          ) : (
+            <List>
+              <AnimatePresence>
               {categories.categories?.map((category) => (
                 <motion.div
                   key={category.id}
@@ -261,7 +266,8 @@ export function CategoriesManagement({
                 </motion.div>
               ))}
             </AnimatePresence>
-          </List>
+            </List>
+          )}
         </CardContent>
       </Card>
 
