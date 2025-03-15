@@ -74,7 +74,7 @@ const ChartLoadingAnimation = () => {
 
 export function InventoryStatus({ data, onDateRangeChange, isLoading = false }: InventoryStatusProps) {
   const theme = useTheme();
-  const [dateRange, setDateRange] = useState<DateRange>("week");
+  const [dateRange, setDateRange] = useState<DateRange>("day");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isChangingRange, setIsChangingRange] = useState(false);
 

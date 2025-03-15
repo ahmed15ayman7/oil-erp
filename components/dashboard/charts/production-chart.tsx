@@ -60,7 +60,7 @@ const ChartLoadingAnimation = () => {
 
 export function ProductionChart({ data, onDateRangeChange, isLoading = false }: ProductionChartProps) {
   const theme = useTheme();
-  const [dateRange, setDateRange] = useState<DateRange>('week');
+  const [dateRange, setDateRange] = useState<DateRange>('day');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isChangingRange, setIsChangingRange] = useState(false);
 

@@ -75,7 +75,7 @@ const ChartLoadingAnimation = () => {
 export function SalesAnalytics({ data, onDateRangeChange, isLoading = false }: SalesAnalyticsProps) {
   const theme = useTheme();
   const queryClient = useQueryClient();
-  const [dateRange, setDateRange] = useState<DateRange>("week");
+  const [dateRange, setDateRange] = useState<DateRange>("day");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isChangingRange, setIsChangingRange] = useState(false);
 
@@ -83,17 +83,17 @@ export function SalesAnalytics({ data, onDateRangeChange, isLoading = false }: S
   const handleRangeChange = useCallback((range: DateRange) => {
     setIsChangingRange(true);
     setDateRange(range);
-    
+
     // التحقق من وجود البيانات في التخزين المؤقت
     const cachedData = queryClient.getQueryData(["dashboardStats", range, currentDate]);
-    
+
     if (!cachedData) {
       onDateRangeChange(range, currentDate);
     } else {
       // استخدام البيانات المخزنة مؤقتاً
       queryClient.setQueryData(["dashboardStats", range, currentDate], cachedData);
     }
-    
+
     setIsChangingRange(false);
   }, [currentDate, onDateRangeChange, queryClient]);
 

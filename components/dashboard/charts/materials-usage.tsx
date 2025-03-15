@@ -90,7 +90,7 @@ const ChartLoadingAnimation = () => {
 
 export function MaterialsUsage({ data, onDateRangeChange, isLoading = false }: MaterialsUsageProps) {
   const theme = useTheme();
-  const [dateRange, setDateRange] = useState<DateRange>("week");
+  const [dateRange, setDateRange] = useState<DateRange>("day");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isChangingRange, setIsChangingRange] = useState(false);
   const [prevData, setPrevData] = useState(data);
@@ -222,8 +222,8 @@ export function MaterialsUsage({ data, onDateRangeChange, isLoading = false }: M
                       </Typography>
                       <Typography variant="h6" className="mt-1">
                         {material.quantity.toLocaleString()}
-                        <br/>
-                         {unitTypes[material?.unit as keyof typeof unitTypes]}
+                        <br />
+                        {unitTypes[material?.unit as keyof typeof unitTypes]}
                       </Typography>
                     </Box>
                   </Grid>
