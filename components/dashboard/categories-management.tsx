@@ -53,13 +53,11 @@ interface Categories {
 interface CategoriesManagementProps {
   categories: Categories;
   onUpdate: () => void;
-  isLoading: boolean;
 }
 
 export function CategoriesManagement({
   categories,
   onUpdate,
-  isLoading,
 }: CategoriesManagementProps) {
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -203,9 +201,6 @@ export function CategoriesManagement({
               إضافة تصنيف
             </Button>
           </div>
-          {isLoading ? (
-            <LoadingOverlay />
-          ) : (
             <List>
               <AnimatePresence>
               {categories.categories?.map((category) => (
@@ -267,7 +262,6 @@ export function CategoriesManagement({
               ))}
             </AnimatePresence>
             </List>
-          )}
         </CardContent>
       </Card>
 

@@ -216,12 +216,14 @@ export function MaterialsUsage({ data, onDateRangeChange, isLoading = false }: M
               <Grid container spacing={2}>
                 {data.currentStock.map((material) => (
                   <Grid item xs={12} sm={6} md={4} key={material.type}>
-                    <Box className="p-4 rounded-lg bg-black/5 dark:bg-white/5">
+                    <Box className="p-4 rounded-lg bg-black/5 text-center">
                       <Typography variant="subtitle2" color="text.secondary">
                         {materialTypes[material.type as keyof typeof materialTypes]}
                       </Typography>
-                      <Typography variant="h5" className="mt-1">
-                        {material.quantity.toLocaleString()} {material.unit}
+                      <Typography variant="h6" className="mt-1">
+                        {material.quantity.toLocaleString()}
+                        <br/>
+                         {unitTypes[material?.unit as keyof typeof unitTypes]}
                       </Typography>
                     </Box>
                   </Grid>

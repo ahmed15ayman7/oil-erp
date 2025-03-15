@@ -261,11 +261,11 @@ export default function DashboardPage() {
                   transition={{ delay: 0.7 }}
                   className="h-full"
                 >
-                  <CategoriesManagement
+                 {!categoriesLoading&& <CategoriesManagement
                     categories={categories}
                     onUpdate={refetchCategories}
-                    isLoading={categoriesLoading}
-                  />
+                    
+                  />}
                 </motion.div>
               </Grid>
 

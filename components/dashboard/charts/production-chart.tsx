@@ -84,7 +84,7 @@ export function ProductionChart({ data, onDateRangeChange, isLoading = false }: 
 
   // حساب متوسط الإنتاج اليومي
   const averageProduction = !isLoading ? totalProduction / (data.history.length || 1) : 0;
-
+  console.log(data.history)
   return (
     <Card
       component={motion.div}

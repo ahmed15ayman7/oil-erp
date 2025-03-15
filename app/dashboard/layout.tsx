@@ -39,7 +39,7 @@ import {
   IconPackageImport,
   IconFilter,
 } from "@tabler/icons-react";
-
+import { LoadingOverlay } from "@/components/loading-overlay";
 const drawerWidth = 280;
 
 const menuItems = [
@@ -133,7 +133,7 @@ export default function DashboardLayout({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   if (status === "loading") {
-    return <div>Loading...</div>;
+    return <LoadingOverlay />;
   }
 
   if (!session) {
@@ -149,7 +149,7 @@ export default function DashboardLayout({
     <div>
       <Toolbar>
         <Typography variant="h6" noWrap component="div">
-          مصنع الزيت
+          مصنع كلاكيت
         </Typography>
       </Toolbar>
       <List>
@@ -162,13 +162,13 @@ export default function DashboardLayout({
             <ListItem key={item.title} disablePadding className={`${isActive ? "bg-primary " : ""}`}>
               <ListItemButton
                 onClick={() => {
-                router.push(item.path);
-                setMobileOpen(false);
-              }}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.title} />
-            </ListItemButton>
+                  router.push(item.path);
+                  setMobileOpen(false);
+                }}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.title} />
+              </ListItemButton>
             </ListItem>
           );
         })}
