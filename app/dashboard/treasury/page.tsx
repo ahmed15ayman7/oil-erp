@@ -13,7 +13,6 @@ import { TransactionChart } from "@/components/treasury/transaction-chart";
 import { StatsCards } from "@/components/treasury/stats-cards";
 import dayjs from "dayjs";
 import { useApi } from "@/hooks/use-api";
-const api = useApi();
 
 const columns = [
   {
@@ -46,7 +45,7 @@ const columns = [
         style: "currency",
         currency: "EGP",
       }),
-  },
+    },
   {
     id: "reference",
     label: "رقم المرجع",
@@ -78,6 +77,7 @@ export default function TreasuryPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [formLoading, setFormLoading] = useState(false);
+  const api = useApi();
 
   const {
     data,
