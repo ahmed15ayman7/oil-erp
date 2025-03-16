@@ -50,7 +50,7 @@ const columns = [
   {
     id: 'quantity',
     label: 'عددالكراتين',
-    format: (value: number) => (value/12).toLocaleString('ar-EG'),
+    format: (value: number) => ( +value / 12 ).toLocaleString('ar-EG'),
   },
   {
     id: 'stockValue',
