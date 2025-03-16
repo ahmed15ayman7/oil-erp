@@ -100,6 +100,7 @@ export function MaterialFormDialog({
                 onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                 required
               >
+                <MenuItem value="TONNE">طن</MenuItem>
                 <MenuItem value="KG">كيلوجرام</MenuItem>
                 <MenuItem value="GRAM">جرام</MenuItem>
                 <MenuItem value="LITER">لتر</MenuItem>

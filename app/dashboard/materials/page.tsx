@@ -25,7 +25,8 @@ const UNIT_MAPPING = {
   GRAM: 'جرام',
   LITER: 'لتر',
   PIECE: 'قطعة',
-  BOX: 'صندوق'
+  BOX: 'صندوق',
+  TONNE:"طن"
 };
 const columns: Column[] = [
   { 
