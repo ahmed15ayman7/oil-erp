@@ -119,47 +119,90 @@ export async function GET(request: NextRequest) {
     }
 
     // إذا لم يتم تحديد نوع المعاملة، قم بإرجاع إحصائيات الخزينة العامة
-    const today = dayjs().startOf("day");
-    const monthStart = dayjs().startOf("month");
+   const today = dayjs().startOf("day");
+   const monthStart = dayjs().startOf("month");
+   const lastMonthStart = monthStart.subtract(1, 'month').startOf("month");
+   const lastMonthEnd = monthStart.subtract(1, 'month').endOf("month");
+   
+   const [todayStats, monthStats, lastMonthStats, currentMonthExpenses, lastMonthExpenses] = await Promise.all([
+     // Today's total revenue
+     prisma.transaction.aggregate({
+       where: {
+         date: {
+           gte: today.toDate(),
+         },
+       },
+       _sum: {
+         amount: true,
+       },
+     }),
+   
+     // Current month total revenue
+     prisma.transaction.aggregate({
+       where: {
+         type: "SALE_PAYMENT",
+         date: {
+           gte: monthStart.toDate(),
+         },
+       },
+       _sum: {
+         amount: true,
+       },
+     }),
+   
+     // Previous month total revenue
+     prisma.transaction.aggregate({
+       where: {
+        type:"SALE_PAYMENT",
+         date: {
+           gte: lastMonthStart.toDate(),
+           lte: lastMonthEnd.toDate(),
+         },
+       },
+       _sum: {
+         amount: true,
+       },
+     }),
+   
+     // Current month total expenses
+     prisma.transaction.aggregate({
+       where: {
+        type:{not:"SALE_PAYMENT"},
+        date: {
+          gte: monthStart.toDate(),
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+    }),
+    
+    // Previous month total expenses
+    prisma.transaction.aggregate({
+      where: {
+        type:{not:"SALE_PAYMENT"},
+        date: {
+           gte: lastMonthStart.toDate(),
+           lte: lastMonthEnd.toDate(),
+         },
+       },
+       _sum: {
+         amount: true,
+       },
+     }),
+   
 
-    const [todayStats, monthStats, totalStats] = await Promise.all([
-      // إجمالي اليوم
-      prisma.transaction.aggregate({
-        where: {
-          date: {
-            gte: today.toDate(),
-          },
-        },
-        _sum: {
-          amount: true,
-        },
-      }),
+   ]);
 
-      // إجمالي الشهر
-      prisma.transaction.aggregate({
-        where: {
-          date: {
-            gte: monthStart.toDate(),
-          },
-        },
-        _sum: {
-          amount: true,
-        },
-      }),
+   return NextResponse.json({
+     today: todayStats._sum.amount || 0,
+     totalIncome: monthStats._sum.amount || 0,
+     incomeChange: ((monthStats._sum.amount || 0) / (lastMonthStats._sum.amount|| 1)) *100  ,
+     totalExpenses: currentMonthExpenses._sum.amount || 0,
+     expenseChange: (currentMonthExpenses._sum.amount|| 0)/(lastMonthExpenses._sum.amount|| 1) * 100 ,
+     balance: (monthStats._sum.amount || 0) - (currentMonthExpenses._sum.amount || 0),
+   });
 
-      // الإجمالي الكلي
-      prisma.transaction.aggregate({
-        _sum: {
-          amount: true,
-        },
-      }),
-    ]);
-
-    return NextResponse.json({
-      today: todayStats._sum.amount || 0,
-      month: monthStats._sum.amount || 0,
-      total: totalStats._sum.amount || 0,
-    });
   } catch (error) {
     console.error("[TREASURY_STATS]", error);
     return NextResponse.json(

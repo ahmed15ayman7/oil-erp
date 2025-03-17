@@ -34,7 +34,7 @@ export function ProductFormDialog({
 }: ProductFormDialogProps) {
   const api = useApi();
   const [formData, setFormData] = useState({
-    code: '',
+    code: `${Math.random().toString().substring(2, 9)}`,
     name: '',
     description: '',
     categoryId: '',
@@ -43,10 +43,11 @@ export function ProductFormDialog({
     quantity: 0,
     minQuantity: 0,
     maxQuantity: 0,
-    barcode: '',
+    barcode: `${Math.random().toString().substring(2, 9)}`,
     isActive: true,
   });
-
+const [pPrice, setPPrice] = useState("p");
+const [pQuantity, setPQuantity] = useState("p");
   // Fetch categories
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
@@ -76,7 +77,7 @@ export function ProductFormDialog({
       });
     } else {
       setFormData({
-        code: '',
+        code: `${Math.random().toString().substring(2, 9)}`,
         name: '',
         description: '',
         categoryId: '',
@@ -85,7 +86,7 @@ export function ProductFormDialog({
         quantity: 0,
         minQuantity: 0,
         maxQuantity: 0,
-        barcode: '',
+        barcode: `${Math.random().toString().substring(2, 9)}`,
         isActive: true,
       });
     }
@@ -107,7 +108,8 @@ export function ProductFormDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    onSubmit({...formData, quantity: pQuantity==="c"? formData.quantity * 12 : formData.quantity,minQuantity:pQuantity==="c"? formData.minQuantity * 12 : formData.minQuantity,maxQuantity:pQuantity==="c"? formData.maxQuantity * 12 : formData.maxQuantity,price: pPrice==="c"? formData.price / 12 : formData.price});
   };
 
   return (
@@ -192,7 +194,7 @@ export function ProductFormDialog({
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={10} sm={4}>
               <TextField
                 fullWidth
                 type="number"
@@ -202,7 +204,20 @@ export function ProductFormDialog({
                 required
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={2} sm={2}>
+              <TextField
+                select
+                fullWidth
+                label="ق/ك"
+                value={pPrice}
+                onChange={(e) => setPPrice(e.target.value)}
+                required
+              >
+                <MenuItem value={"p"}>ازازة</MenuItem>
+                <MenuItem value={"c"}>كرتونة</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid item xs={10} sm={4}>
               <TextField
                 fullWidth
                 type="number"
@@ -212,6 +227,19 @@ export function ProductFormDialog({
                 required
               />
             </Grid>
+            <Grid item xs={2} sm={2}>
+              <TextField
+                select
+                fullWidth
+                label="ق/ك"
+                value={pQuantity}
+                onChange={(e) => setPQuantity(e.target.value)}
+                required
+              >
+                <MenuItem value={"p"}>ازازة</MenuItem>
+                <MenuItem value={"c"}>كرتونة</MenuItem>
+              </TextField>
+            </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
@@ -219,6 +247,7 @@ export function ProductFormDialog({
                 label="الحد الأدنى للكمية"
                 value={formData.minQuantity}
                 onChange={handleChange('minQuantity')}
+                required
               />
             </Grid>
             <Grid item xs={12} sm={6}>

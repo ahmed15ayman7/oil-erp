@@ -91,12 +91,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { customerId, items, dueDate, tax, discount, repId } = body;
+    const { customerId, items, dueDate, tax=0, discount=0, repId,status } = body;
 
     // حساب المجاميع
     const subtotal = items.reduce((sum: number, item: any) => sum + item.total, 0);
     const total = subtotal + tax - discount;
-
+    console.log("total", total)
     // إنشاء رقم الفاتورة
     const lastSale = await prisma.sale.findFirst({
       orderBy: { createdAt: "desc" },
@@ -110,27 +110,36 @@ export async function POST(request: NextRequest) {
       const sale = await tx.sale.create({
         data: {
           invoiceNumber,
-          customerId,
+          customer: {
+            connect: {
+              id: customerId
+            }
+          },
           date: new Date(),
           dueDate: dueDate ? new Date(dueDate) : null,
           subtotal,
           tax,
+          status,
           discount,
           total,
-          userId: session.user.id,
-          repId,
+          user: { connect: { id: session.user.id } },
+          rep:repId && {
+            connect: {
+              id: repId
+            }
+          },
           transactions: {
             create: {
               type: "SALE_PAYMENT" as TransactionType,
               amount: total,
               description: `دفع فاتورة مبيعات رقم ${invoiceNumber}`,
               user: {
-                    connect: {
-                      id: session.user.id,
-                    },
-                  },
+                connect: {
+                  id: session.user.id,
+                },
               },
             },
+          },
           items: {
             create: items.map((item: any) => ({
               productId: item.productId,
@@ -214,7 +223,10 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    await getAuthSession();
+    const session = await getAuthSession();
+    if (!session) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
 
     const data = await request.json();
 
@@ -317,7 +329,28 @@ export async function PUT(request: NextRequest) {
         })
       )
     );
-
+    let transaction = await prisma.transaction.findFirst({
+      where: { saleId: data.id },
+    })
+    if(transaction){
+    await prisma.transaction.updateMany({
+      where: { saleId: data.id },
+      data: {
+        amount: total, // قيمة سالبة لأنها مصروفات
+      },
+    });
+    }else{
+       await prisma.transaction.create({
+        data: {
+          type: "SALE_PAYMENT",
+          amount: total, // قيمة سالبة لأنها مصروفات
+          description: `دفع فاتورة مبيعات رقم ${updatedSale.invoiceNumber}`,
+          reference: updatedSale.invoiceNumber,
+          referenceType: "SALE",
+          saleId: updatedSale.id,
+          createdBy: session.user.id,
+        },
+      });}
     return successResponse(updatedSale);
   } catch (error) {
     return handleApiError(error);
@@ -364,7 +397,7 @@ export async function PATCH(request: NextRequest) {
       'رقم الفاتورة': sale.invoiceNumber,
       'التاريخ': new Date(sale.date).toLocaleDateString('ar-EG'),
       'تاريخ الاستحقاق': sale.dueDate ? new Date(sale.dueDate).toLocaleDateString('ar-EG') : '',
-      'العميل': sale.customer.name,
+      'العميل': sale.customer?.name,
       'المنتجات': sale.items.map(item => `${item.product.name} (${item.quantity})`).join(', '),
       'إجمالي المنتجات': sale.subtotal.toLocaleString('ar-EG'),
       'الضريبة': sale.tax.toLocaleString('ar-EG'),

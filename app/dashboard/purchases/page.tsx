@@ -140,6 +140,7 @@ const deliveryStatuses=[{id:'DELIVERED',name:'تم التوريد'},{id:'PARTIAL
   const handleFormSubmit = async (formData: any) => {
     setFormLoading(true);
     try {
+      console.log(formData)
       if (selectedPurchase) {
         await api.put('/api/purchases', {
           ...formData,

@@ -39,10 +39,26 @@ export async function GET(request: NextRequest) {
       prisma.purchase.findMany({
         where,
         include: {
-          supplier: true,
+          supplier: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
           items: {
             include: {
-              material: true,
+              // material: {
+              //   select: {
+              //     id: true,
+              //     name: true,
+              //   },
+              // },
+              // unit: {
+              //   select: {
+              //     id: true,
+              //     name: true,
+              //   },
+              // },
             },
           },
           user: {
@@ -128,6 +144,7 @@ export async function POST(request: NextRequest) {
               total: item.total,
             })),
           },
+          
         },
       });
 
@@ -159,7 +176,7 @@ export async function POST(request: NextRequest) {
       const transaction = await tx.transaction.create({
         data: {
           type: "PURCHASE_PAYMENT",
-          amount: -total, // قيمة سالبة لأنها مصروفات
+          amount: total, // قيمة سالبة لأنها مصروفات
           description: `دفع فاتورة مشتريات رقم ${invoiceNumber}`,
           reference: invoiceNumber,
           referenceType: "PURCHASE",
@@ -183,7 +200,10 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    await getAuthSession();
+    const session = await getAuthSession();
+    if (!session) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
 
     const data = await request.json();
 
@@ -248,7 +268,8 @@ export async function PUT(request: NextRequest) {
           notes: data.notes,
           items: {
             create: data.items.map((item: any) => ({
-              productId: item.productId,
+              materialId: item.materialId,
+              unitId:item.unitId,
               quantity: item.quantity,
               price: item.price,
               total: item.quantity * item.price,
@@ -276,8 +297,8 @@ export async function PUT(request: NextRequest) {
     // Update new quantities and last purchase price
     await Promise.all(
       data.items.map((item: any) =>
-        prisma.product.update({
-          where: { id: item.productId },
+        prisma.material.update({
+          where: { id: item.materialId },
           data: {
             quantity: {
               increment: item.quantity,
@@ -287,7 +308,28 @@ export async function PUT(request: NextRequest) {
         })
       )
     );
-
+    let transaction = await prisma.transaction.findFirst({
+      where: { purchaseId: data.id },
+    })
+    if(transaction){
+    await prisma.transaction.updateMany({
+      where: { purchaseId: data.id },
+      data: {
+        amount: total, // قيمة سالبة لأنها مصروفات
+      },
+    });
+    }else{
+       await prisma.transaction.create({
+        data: {
+          type: "PURCHASE_PAYMENT",
+          amount: total, // قيمة سالبة لأنها مصروفات
+          description: `دفع فاتورة مشتريات رقم ${data.invoiceNumber}`,
+          reference: data.invoiceNumber,
+          referenceType: "PURCHASE",
+          purchaseId: data.id,
+          createdBy: session.user.id,
+        },
+      });}
     return successResponse(updatedPurchase);
   } catch (error) {
     return handleApiError(error);
@@ -341,7 +383,7 @@ export async function PATCH(request: NextRequest) {
       'الخصم': purchase.discount.toLocaleString('ar-EG'),
       'الإجمالي': purchase.total.toLocaleString('ar-EG'),
       'الحالة': getStatusText(purchase.status),
-      'المشتري': purchase.user.name,
+      'المشتري': purchase?.user?.name,
       'ملاحظات': purchase.notes || '',
     }));
 

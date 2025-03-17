@@ -32,7 +32,7 @@ export async function GET(req: Request) {
     let balance = 0;
     const transactionsWithBalance = transactions.map((transaction) => {
       balance +=
-        transaction.type === "INCOME"
+        transaction.type === "SALE_PAYMENT" 
           ? transaction.amount
           : -transaction.amount;
       return {

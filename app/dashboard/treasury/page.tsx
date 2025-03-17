@@ -102,7 +102,7 @@ export default function TreasuryPage() {
     queryKey: ["treasury-stats"],
     queryFn: async () => {
       const response = await api.get("/api/treasury/stats");
-      return response.data;
+      return response;
     },
   });
 
@@ -143,7 +143,7 @@ export default function TreasuryPage() {
       setFormLoading(false);
     }
   };
-
+console.log(stats)
   return (
     <Container maxWidth="xl">
       <Box sx={{ mb: 4 }}>

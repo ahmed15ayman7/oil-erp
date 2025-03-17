@@ -29,6 +29,7 @@ interface SaleItem {
   quantity: number;
   price: number;
   total: number;
+  p:string;
 }
 
 interface SaleFormData {
@@ -78,7 +79,7 @@ export function SaleFormDialog({
 
   useEffect(() => {
     if (initialData) {
-      setFormData({ ...formData, ...initialData });
+      setFormData({ ...formData, ...{...initialData,items: initialData.items?.map((item) => ({ ...item, p:"p"}))||[] } });
     }
   }, [initialData]);
 
@@ -87,7 +88,7 @@ export function SaleFormDialog({
       ...prev,
       items: [
         ...prev.items,
-        { productId: '', quantity: 1, price: 0, total: 0 },
+        { productId: '', quantity: 1, price: 0, total: 0, p: 'p' },
       ],
     }));
   };
@@ -105,6 +106,8 @@ export function SaleFormDialog({
     field: keyof SaleItem,
     value: any
   ) => {
+    
+
     setFormData((prev) => {
       const items = [...prev.items];
       items[index] = {
@@ -118,10 +121,13 @@ export function SaleFormDialog({
           (p: { id: string }) => p.id === value
         );
         if (product) {
-          items[index].price = product.price;
+          items[index].price =items[index].p === 'c' ? product.price * 12 : product.price;
         }
       }
-
+      value === 'c' && field === 'p' &&
+      products?.products.find((p: { id: string }) => p.id === formData.items[index].productId)?.price == formData.items[index].price
+        ? (items[index].price = items[index].price * 12)
+        : null;
       // Calculate item total
       items[index].total =
         items[index].quantity * items[index].price;
@@ -140,7 +146,7 @@ export function SaleFormDialog({
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    onSubmit(formData);
+    onSubmit({...formData, items: formData.items.map((item) => ({...item,quantity: item.p==="c"? item.quantity * 12 : item.quantity,price: item.p==="c"? item.price / 12 : item.price}))});
   };
 
   return (
@@ -196,6 +202,7 @@ export function SaleFormDialog({
                 <TableHead>
                   <TableRow>
                     <TableCell>المنتج</TableCell>
+                    <TableCell>از/كر</TableCell>
                     <TableCell>الكمية</TableCell>
                     <TableCell>السعر</TableCell>
                     <TableCell>الإجمالي</TableCell>
@@ -207,6 +214,7 @@ export function SaleFormDialog({
                     <TableRow key={index}>
                       <TableCell>
                         <Autocomplete
+                    className="min-w-56"
                           options={products?.products || []}
                           getOptionLabel={(option) => option.name}
                           value={
@@ -231,8 +239,29 @@ export function SaleFormDialog({
                         />
                       </TableCell>
                       <TableCell>
+              <TextField
+                select
+                fullWidth
+                label="از/كر"
+                value={item.p}
+                onChange={(e) =>
+                  handleItemChange(
+                    index,
+                    'p',
+                    e.target.value
+                  )
+                }
+                required
+              >
+               <MenuItem value={"p"}>ازازة</MenuItem>
+               <MenuItem value={"c"}>كرتونة</MenuItem>
+              </TextField>
+          
+                      </TableCell>
+                      <TableCell>
                         <TextField
                           type="number"
+                          className="max-w-32"
                           value={item.quantity}
                           onChange={(e) =>
                             handleItemChange(
@@ -249,6 +278,7 @@ export function SaleFormDialog({
                         <TextField
                           type="number"
                           value={item.price}
+                          className="max-w-32"
                           onChange={(e) =>
                             handleItemChange(
                               index,

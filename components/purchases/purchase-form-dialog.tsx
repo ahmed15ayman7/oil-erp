@@ -81,11 +81,12 @@ export function PurchaseFormDialog({
   });
 
   useEffect(() => {
+    console.log(initialData)
     if (initialData) {
       setFormData({
         ...initialData,
         date: dayjs(initialData.date),
-        dueDate: initialData.dueDate ? new Date(initialData.dueDate) : null,
+        dueDate: initialData.dueDate ? dayjs(initialData.dueDate) : null,
       });
     } else {
       setFormData({
@@ -132,14 +133,14 @@ export function PurchaseFormDialog({
     };
 
     // Update price if product changes
-    if (field === 'materialId') {
-      const material = materials?.materials.find(
-        (p: { id: string }) => p.id === value
-      );
-      if (material) {
-        items[index].price = material.price;
-      }
-    }
+    // if (field === 'materialId') {
+    //   const material = materials?.materials.find(
+    //     (p: { id: string }) => p.id === value
+    //   );
+    //   if (material) {
+    //     items[index].price = material.price;
+    //   }
+    // }
 
     // Calculate item total
     items[index].total = items[index].quantity * items[index].price;
@@ -288,7 +289,7 @@ export function PurchaseFormDialog({
                   key={index}
                   className="mb-4"
                 >
-                  <Grid item xs={12} sm={4}>
+                  <Grid item xs={12} sm={3}>
                     <Autocomplete
                       fullWidth
                       options={materials?.materials || []}
@@ -338,6 +339,13 @@ export function PurchaseFormDialog({
                       value={units?.units.find(
                         (u: { id: string }) => u.id === item.unitId
                       )}
+                      onChange={(_, newValue) =>
+                        handleItemChange(
+                          index,
+                          'unitId',
+                          newValue?.id || ''
+                        )
+                      }
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -371,6 +379,17 @@ export function PurchaseFormDialog({
                     />
                   </Grid>
                   <Grid item xs={12} sm={2}>
+
+              <TextField
+                label="الإجمالي"
+                value={(item.price*item.quantity).toLocaleString('ar-EG', {
+                  style: 'currency',
+                  currency: 'EGP',
+                })}
+                disabled
+                />
+                </Grid>
+                  <Grid item xs={12} sm={1}>
                     <IconButton
                       color="error"
                       onClick={() => handleRemoveItem(index)}

@@ -199,8 +199,8 @@ enum ExpenseType {
 model Sale {
   id            String    @id @default(cuid()) @map("_id")
   invoiceNumber String    @unique
-  customerId    String
-  customer      Customer  @relation(fields: [customerId], references: [id])
+  customerId    String?     
+  customer      Customer?  @relation(fields: [customerId], references: [id])
   date          DateTime
   dueDate       DateTime?
   status        PaymentStatus @default(UNPAID)
@@ -214,8 +214,8 @@ model Sale {
   updatedAt     DateTime  @updatedAt
   userId        String
   user          User      @relation(fields: [userId], references: [id])
-  repId         String
-  rep           SalesRepresentative @relation(fields: [repId], references: [id])
+  repId         String?
+  rep           SalesRepresentative? @relation(fields: [repId], references: [id])
   representatives Representative[] @relation("RepresentativeSales", references: [id], fields: [representativeIds])
   representativeIds String[] @default([])
   transactions Transaction[]
@@ -250,20 +250,20 @@ model Purchase {
   notes         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
+  userId        String?
+  user          User?      @relation(fields: [userId], references: [id])
   transactions Transaction[]
 }
 
 model PurchaseItem {
   id          String    @id @default(cuid()) @map("_id")
   purchaseId  String
-  purchase    Purchase  @relation(fields: [purchaseId], references: [id])
+  purchase    Purchase  @relation(fields: [purchaseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   materialId   String
-  material     Material   @relation(fields: [materialId], references: [id])
+  material     Material   @relation(fields: [materialId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   quantity    Float
-  unit        Unit @relation(fields: [unitId], references: [id])
-  unitId      String
+  unit        Unit? @relation(fields: [unitId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  unitId      String?
   price       Float
   total       Float
   notes       String?
@@ -298,19 +298,19 @@ model Transaction {
   user          User      @relation(fields: [createdBy], references: [id])
 
   // العلاقات
-  sale          Sale?     @relation(fields: [saleId], references: [id])
+  sale          Sale?     @relation(fields: [saleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   saleId        String?
-  purchase      Purchase? @relation(fields: [purchaseId], references: [id])
+  purchase      Purchase? @relation(fields: [purchaseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   purchaseId    String?
-  maintenance   MaintenanceLog? @relation(fields: [maintenanceId], references: [id])
+  maintenance   MaintenanceLog? @relation(fields: [maintenanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   maintenanceId String?
-  vehicleExpense VehicleExpense? @relation(fields: [vehicleExpenseId], references: [id])
+  vehicleExpense VehicleExpense? @relation(fields: [vehicleExpenseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   vehicleExpenseId String?
-  delivery      Delivery? @relation(fields: [deliveryId], references: [id])
+  delivery      Delivery? @relation(fields: [deliveryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   deliveryId    String?
-  representative Representative? @relation(fields: [representativeId], references: [id])
+  representative Representative? @relation(fields: [representativeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   representativeId String?
-  asset Asset? @relation(fields: [assetId], references: [id])
+  asset Asset? @relation(fields: [assetId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   assetId String?
 
   SalesRepresentative TransactionSalesRepresentative[]
