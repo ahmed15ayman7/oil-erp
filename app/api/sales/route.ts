@@ -128,18 +128,6 @@ export async function POST(request: NextRequest) {
               id: repId
             }
           },
-          transactions: {
-            create: {
-              type: "SALE_PAYMENT" as TransactionType,
-              amount: total,
-              description: `دفع فاتورة مبيعات رقم ${invoiceNumber}`,
-              user: {
-                connect: {
-                  id: session.user.id,
-                },
-              },
-            },
-          },
           items: {
             create: items.map((item: any) => ({
               productId: item.productId,

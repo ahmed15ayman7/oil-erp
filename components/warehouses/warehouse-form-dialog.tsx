@@ -25,7 +25,7 @@ export function WarehouseFormDialog({
 }: WarehouseFormDialogProps) {
   const [formData, setFormData] = useState({
     name: '',
-    type: 'RAW_MATERIALS',
+    // type: 'RAW_MATERIALS',
     location: '',
     description: '',
   });
@@ -67,7 +67,7 @@ export function WarehouseFormDialog({
                 required
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            {/* <Grid item xs={12} sm={6}>
               <TextField
                 select
                 fullWidth
@@ -82,8 +82,8 @@ export function WarehouseFormDialog({
                 <MenuItem value="STICKER">ستيكر</MenuItem>
                 <MenuItem value="FINISHED_PRODUCTS">منتجات نهائية</MenuItem>
               </TextField>
-            </Grid>
-            <Grid item xs={12}>
+            </Grid> */}
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="الموقع"

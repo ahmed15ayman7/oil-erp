@@ -16,20 +16,21 @@ const columns = [
     id: 'name', 
     label: 'اسم المخزن',
   },
-  {
-    id: 'type',
-    label: 'النوع',
-    format: (value: string) => {
-      const typeMap = {
-        RAW_MATERIALS: { label: 'مواد خام', color: 'primary' },
-        BOTTLES: { label: 'زجاجات', color: 'secondary' },
-        CARTONS: { label: 'كراتين', color: 'success' },
-        FINISHED_PRODUCTS: { label: 'منتجات نهائية', color: 'info' },
-      };
-      const type = typeMap[value as keyof typeof typeMap];
-      return <Chip label={type.label} color={type.color as any} size="small" />;
-    },
-  },
+  // {
+  //   id: 'type',
+  //   label: 'النوع',
+  //   format: (value: string) => {
+  //     const typeMap = {
+  //       RAW_MATERIALS: { label: 'مواد خام', color: 'primary' },
+  //       BOTTLES: { label: 'زجاجات', color: 'secondary' },
+  //       CARTONS: { label: 'كراتين', color: 'success' },
+  //       FINISHED_PRODUCTS: { label: 'منتجات نهائية', color: 'info' },
+  //       STICKER: { label: 'ستيكرز', color: 'wrong' },
+  //     };
+  //     const type = typeMap[value as keyof typeof typeMap];
+  //     return <Chip label={type?.label} color={type?.color as any||"primary"} size="small" />;
+  //   },
+  // },
   {
     id: 'location',
     label: 'الموقع',
@@ -78,6 +79,7 @@ export default function WarehousesPage() {
       await api.delete(`/api/warehouses?id=${warehouse.id}`, {
         successMessage: 'تم حذف المخزن بنجاح',
       });
+      refetchWarehouses();
     } catch (error) {
       console.error('Error deleting warehouse:', error);
     }
@@ -150,16 +152,16 @@ export default function WarehousesPage() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         additionalActions={[
-          {
-            icon: <IconEdit />,
-            label: 'تعديل',
-            onClick: handleEdit,
-          },
-          {
-            icon: <IconTrash />,
-            label: 'حذف',
-            onClick: handleDelete,
-          },
+          // {
+          //   icon: <IconEdit />,
+          //   label: 'تعديل',
+          //   onClick: handleEdit,
+          // },
+          // {
+          //   icon: <IconTrash />,
+          //   label: 'حذف',
+          //   onClick: handleDelete,
+          // },
         ]}
       />
       )}

@@ -79,15 +79,12 @@ const columns: Column[] = [
       }),
   },
   {
-    id: 'supplier',
-    label: 'المورد',
-  },
-  {
-    id: 'location',
+    id: 'warehouse',
     label: 'موقع التخزين',
+    format: (value: {name:string}) => 
+      value.name
   },
 ];
-
 export default function MaterialsPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -100,7 +97,7 @@ export default function MaterialsPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [conversionDialogOpen, setConversionDialogOpen] = useState(false);
   const api = useApi();
-
+  
   const {
     data,
     isLoading,
@@ -111,8 +108,9 @@ export default function MaterialsPage() {
       api.get(
         `/api/materials?page=${page + 1}&limit=${rowsPerPage}&search=${searchQuery}`
       ),
-  });
-
+    });
+    
+    console.log(data)
   useEffect(() => {
     refetchMaterials();
   }, [searchQuery, page, rowsPerPage]);
@@ -158,6 +156,7 @@ export default function MaterialsPage() {
         });
       }
       setFormOpen(false);
+      setSelectedMaterial(null);
       refetchMaterials();
     } finally {
       setFormLoading(false);
@@ -218,7 +217,7 @@ export default function MaterialsPage() {
         onPageChange={setPage}
         onRowsPerPageChange={setRowsPerPage}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        // onDelete={handleDelete}
         additionalActions={[
           // {
           //   icon: <IconHistory />,
@@ -237,7 +236,10 @@ export default function MaterialsPage() {
       {!isLoading && data && (
         <MaterialFormDialog
           open={formOpen}
-          onClose={() => setFormOpen(false)}
+          onClose={() => {
+            setSelectedMaterial(null)
+            setFormOpen(false)
+          }}
           onSubmit={handleFormSubmit}
           initialData={selectedMaterial}
         />

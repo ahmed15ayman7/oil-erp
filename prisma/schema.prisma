@@ -224,9 +224,9 @@ model Sale {
 model SaleItem {
   id          String    @id @default(cuid()) @map("_id")
   saleId      String
-  sale        Sale      @relation(fields: [saleId], references: [id])
+  sale        Sale      @relation(fields: [saleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   productId   String
-  product     Product   @relation(fields: [productId], references: [id])
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   quantity    Float
   price       Float
   total       Float
@@ -260,9 +260,9 @@ model PurchaseItem {
   purchaseId  String
   purchase    Purchase  @relation(fields: [purchaseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   materialId   String
-  material     Material   @relation(fields: [materialId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  material     Material   @relation(fields: [materialId], references: [id])
   quantity    Float
-  unit        Unit? @relation(fields: [unitId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  unit        Unit? @relation(fields: [unitId], references: [id])
   unitId      String?
   price       Float
   total       Float
@@ -320,6 +320,7 @@ enum TransactionType {
   SALE_PAYMENT       // دفع مبيعات
   PURCHASE_PAYMENT   // دفع مشتريات
   MAINTENANCE_COST   // تكلفة صيانة
+  ASSET_PURCHASE
   VEHICLE_EXPENSE    // مصاريف مركبات
   DELIVERY_PAYMENT   // مدفوعات توصيل
   SALARY            // رواتب
@@ -477,18 +478,18 @@ enum RepresentativeStatus {
   INACTIVE
 }
 
-enum WarehouseType {
-  RAW_MATERIALS
-  BOTTLES
-  CARTONS
-  FINISHED_PRODUCTS
-  STICKER
-}
+// enum WarehouseType {
+//   RAW_MATERIALS
+//   BOTTLES
+//   CARTONS
+//   FINISHED_PRODUCTS
+//   STICKER
+// }
 
 model Warehouse {
   id          String        @id @default(cuid()) @map("_id")
   name        String
-  type        WarehouseType
+  // type        WarehouseType
   location    String?
   description String?
   items       WarehouseItem[]
@@ -542,12 +543,10 @@ model Material {
   quantity    Float       @default(0)  // الكمية المتوفرة
   minQuantity Float       @default(0)  // الحد الأدنى
   price       Float       @default(0)  // سعر الوحدة
-  location    String?     // موقع التخزين
-  supplier    String?     // المورد
   notes       String?     // ملاحظات
-  lastPurchasePrice Float?    // سعر الشراء الأخير
-  warehouse   Warehouse? @relation(fields: [warehouseId], references: [id])
-  warehouseId String?
+  lastPurchasePrice Float? @default(0)   // سعر الشراء الأخير
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  warehouseId String
   transactions MaterialTransaction[] // سجل المعاملات
   productions Production[]  // إضافة العلاقة مع سجلات الإنتاج
   createdAt   DateTime    @default(now())

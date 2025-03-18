@@ -37,7 +37,7 @@ export function AssetFormDialog({
     type: "MACHINE",
     value: "",
     purchaseDate: dayjs(),
-    nextMaintenance: dayjs(),
+    nextMaintenance: dayjs().endOf('month'),
     status: "ACTIVE",
     maxMaterials: 0,
   });
@@ -59,7 +59,7 @@ export function AssetFormDialog({
         type: "MACHINE",
         value: "",
         purchaseDate: dayjs(),
-        nextMaintenance: dayjs(),
+        nextMaintenance: dayjs().endOf('month'),
         status: "ACTIVE",
         maxMaterials: 0,
       });
@@ -80,7 +80,7 @@ export function AssetFormDialog({
       ...formData,
       value: parseFloat(formData.value),
       purchaseDate: formData.purchaseDate.toISOString(),
-      nextMaintenance: formData.nextMaintenance?.toISOString() || null,
+      nextMaintenance: formData.nextMaintenance?.toISOString(),
       maxMaterials: formData.maxMaterials,
     });
   };
@@ -141,6 +141,7 @@ export function AssetFormDialog({
 
             <DatePicker
               label="تاريخ الشراء"
+              format="DD/MM/YY"
               value={formData.purchaseDate}
               onChange={(newValue) =>
                 setFormData((prev) => ({
@@ -162,6 +163,7 @@ export function AssetFormDialog({
                   nextMaintenance: dayjs(newValue),
                 }))
               }
+              format="DD/MM/YY"
               slotProps={{
                 textField: { fullWidth: true },
               }}

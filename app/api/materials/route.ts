@@ -30,6 +30,8 @@ export async function GET(request: NextRequest) {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
+          warehouse: {
+            select: { name: true },},
           _count: {
             select: { transactions: true },
           },
@@ -74,7 +76,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingMaterial) {
-      throw new Error('كود المادة مستخدم بالفعل');
+      return handleApiError('كود المادة مستخدم بالفعل');
     }
 
     const material = await prisma.material.create({
@@ -128,15 +130,14 @@ export async function PUT(request: NextRequest) {
     const material = await prisma.material.update({
       where: { id },
       data: {
+        warehouseId: updateData.warehouseId,
         name: updateData.name,
         code: updateData.code,
         unit: updateData.unit,
         minQuantity: updateData.minQuantity,
         price: updateData.price,
-        supplier: updateData.supplier,
         quantity: updateData.quantity,
         notes: updateData.notes,
-        location: updateData.location,
         type: updateData.type,
       },
     });

@@ -41,7 +41,7 @@ export function PurchaseFormDialog({
   const api = useApi();
   const [formData, setFormData] = useState({
     supplierId: '',
-    invoiceNumber: '',
+    invoiceNumber: '********',
     date: dayjs(),
     dueDate: null as dayjs.Dayjs | null,
     items: [
@@ -91,7 +91,7 @@ export function PurchaseFormDialog({
     } else {
       setFormData({
         supplierId: '',
-        invoiceNumber: '',
+        invoiceNumber: '********',
         date: dayjs(),
         dueDate: null,
         items: [
@@ -133,14 +133,19 @@ export function PurchaseFormDialog({
     };
 
     // Update price if product changes
-    // if (field === 'materialId') {
-    //   const material = materials?.materials.find(
-    //     (p: { id: string }) => p.id === value
-    //   );
-    //   if (material) {
-    //     items[index].price = material.price;
-    //   }
-    // }
+    if (field === 'materialId') {
+      
+      const material = materials?.materials.find(
+        (p: { id: string }) => p.id === value
+      );
+     let unit= units?.units.find(
+        (p: { symbol: string }) => p.symbol === material?.unit
+      );
+      if (material) {
+        items[index].price = material.price;
+        items[index].unitId= unit?.id 
+      }
+    }
 
     // Calculate item total
     items[index].total = items[index].quantity * items[index].price;
@@ -252,7 +257,7 @@ export function PurchaseFormDialog({
                 label="رقم الفاتورة"
                 value={formData.invoiceNumber}
                 onChange={handleChange('invoiceNumber')}
-                required
+                disabled
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -261,6 +266,7 @@ export function PurchaseFormDialog({
                   label="تاريخ الفاتورة"
                   value={formData.date}
                   onChange={handleChange('date')}
+                  format="DD/MM/YYYY"
                   slotProps={{
                     textField: { fullWidth: true },
                   }}
@@ -273,6 +279,7 @@ export function PurchaseFormDialog({
                   label="تاريخ الاستحقاق"
                   value={formData.dueDate}
                   onChange={handleChange('dueDate')}
+                  format="DD/MM/YYYY"
                   slotProps={{
                     textField: { fullWidth: true },
                   }}

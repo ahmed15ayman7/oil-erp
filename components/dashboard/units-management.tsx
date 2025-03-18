@@ -21,6 +21,7 @@ import {
   Tooltip,
   CircularProgress,
   Alert,
+  Autocomplete,
 } from "@mui/material";
 import {
   IconEdit,
@@ -32,7 +33,7 @@ import {
 } from "@tabler/icons-react";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
-import { Unit } from "@prisma/client";
+import { Unit, UnitType } from "@prisma/client";
 
 interface Units {
   units: Unit[];
@@ -45,7 +46,15 @@ interface UnitsManagementProps {
   units: Units;
   onUpdate: () => void;
 }
-
+// let unitsTypes = [
+//   "KG",
+//   "METER",
+//   "TONNE",
+//   "GRAM",
+//   "LITER",
+//   "PIECE",
+//   "BOX",
+// ];
 export function UnitsManagement({ units, onUpdate }: UnitsManagementProps) {
   const [open, setOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
@@ -273,17 +282,26 @@ export function UnitsManagement({ units, onUpdate }: UnitsManagementProps) {
               }
               error={!!error && !formData.name}
             />
-            <TextField
-              label="رمز الوحدة"
-              fullWidth
-              required
-              value={formData.symbol}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, symbol: e.target.value }))
-              }
-              error={!!error && !formData.symbol}
-              helperText="مثال: كجم، لتر، قطعة"
-            />
+             <Autocomplete
+                      fullWidth
+                      options={ [...Object.keys(UnitType)] }
+                      getOptionLabel={(option) => option}
+                      value={
+                        formData.symbol
+                      }
+                      onChange={(_, newValue) =>
+                        setFormData((prev) => ({ ...prev, symbol: newValue||'' }))
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                        {...params}
+                        label="رمز الوحدة"
+                        helperText="مثال: كجم، لتر، قطعة"
+                        error={!!error && !formData.symbol}
+                          required
+                          />
+                        )}
+                    />
             <TextField
               label="الوصف"
               fullWidth

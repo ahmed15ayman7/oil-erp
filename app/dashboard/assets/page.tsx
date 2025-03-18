@@ -126,7 +126,7 @@ useEffect(() => {
     setFormLoading(true);
     try {
       if (selectedAsset) {
-        await fetch("/api/assets", {
+        let response=  await fetch("/api/assets", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -134,6 +134,15 @@ useEffect(() => {
             id: selectedAsset.id,
           }),
         });
+        if (!response.ok) {
+         toast.update(loadingToast, {
+          render: "حدث خطأ أثناء تحديث بيانات الأصل",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
+        return
+        }
         toast.update(loadingToast, {
           render: "تم تحديث بيانات الأصل بنجاح",
           type: "success",
@@ -141,11 +150,20 @@ useEffect(() => {
           autoClose: 3000,
         });
       } else {
-        await fetch("/api/assets", {
+      let response=  await fetch("/api/assets", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
         });
+        if (!response.ok) {
+         toast.update(loadingToast, {
+          render: "حدث خطأ أثناء إضافة الأصل",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
+        return
+        }
         toast.update(loadingToast, {
           render: "تم إضافة الأصل بنجاح",
           type: "success",

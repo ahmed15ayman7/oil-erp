@@ -8,7 +8,10 @@ import {
   TextField,
   Grid,
   MenuItem,
+  Autocomplete,
 } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
+import { useApi } from '@/hooks/use-api';
 
 interface MaterialFormDialogProps {
   open: boolean;
@@ -23,24 +26,39 @@ export function MaterialFormDialog({
   onSubmit,
   initialData,
 }: MaterialFormDialogProps) {
+  const api = useApi();
   const [formData, setFormData] = useState({
-    code: '',
+    code: `${Math.floor(Math.random() * 1000000)}`,
     name: '',
     type: 'RAW_MATERIAL',
     unit: 'KG',
     quantity: 0,
     minQuantity: 0,
     price: 0,
-    location: '',
-    supplier: '',
+    warehouseId: '',
     notes: '',
   });
-
+  const { data: warehouses } = useQuery({
+    queryKey: ['warehouses'],
+    queryFn: () => api.get('/api/warehouses'),
+  });
   useEffect(() => {
     if (initialData) {
       setFormData(initialData);
+    }else{
+      setFormData({
+        code: `${Math.floor(Math.random() * 1000000)}`,
+        name: '',
+        type: 'RAW_MATERIAL',
+        unit: 'KG',
+        quantity: 0,
+        minQuantity: 0,
+        price: 0,
+        warehouseId: '',
+        notes: '',
+      })
     }
-  }, [initialData]);
+  }, [initialData,open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +80,7 @@ export function MaterialFormDialog({
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                 required
+                disabled
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -112,16 +131,6 @@ export function MaterialFormDialog({
               <TextField
                 fullWidth
                 type="number"
-                label="الكمية المتوفرة"
-                value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="number"
                 label="الحد الأدنى"
                 value={formData.minQuantity}
                 onChange={(e) => setFormData({ ...formData, minQuantity: Number(e.target.value) })}
@@ -138,20 +147,26 @@ export function MaterialFormDialog({
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="المورد"
-                value={formData.supplier}
-                onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="موقع التخزين"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              />
+            <Autocomplete
+                      fullWidth
+                      options={warehouses?.warehouses || []}
+                      getOptionLabel={(option) => option.name}
+                      value={
+                        warehouses?.warehouses.find(
+                          (p: { id: string }) => p.id === formData.warehouseId
+                        ) || null
+                      }
+                      onChange={(_, newValue) =>
+                        setFormData({ ...formData, warehouseId: newValue?.id || '' })
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="المخزن"
+                          required
+                        />
+                      )}
+                    />
             </Grid>
             <Grid item xs={12}>
               <TextField

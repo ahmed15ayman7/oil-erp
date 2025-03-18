@@ -30,6 +30,7 @@ const columns = [
         MAINTENANCE_COST: { label: "تكلفة صيانة", color: "warning" },
         VEHICLE_EXPENSE: { label: "مصاريف مركبات", color: "info" },
         DELIVERY_PAYMENT: { label: "مدفوعات توصيل", color: "primary" },
+        ASSET_PURCHASE: { label: "اصول", color: "error" },
         SALARY: { label: "رواتب", color: "secondary" },
         OTHER: { label: "أخرى", color: "default" },
       };
@@ -143,7 +144,7 @@ export default function TreasuryPage() {
       setFormLoading(false);
     }
   };
-console.log(stats)
+console.log(data)
   return (
     <Container maxWidth="xl">
       <Box sx={{ mb: 4 }}>
@@ -254,7 +255,7 @@ console.log(stats)
                 rowsPerPage={rowsPerPage}
                 onPageChange={setPage}
                 onRowsPerPageChange={setRowsPerPage}
-                onDelete={handleDelete}
+                // onDelete={handleDelete}
               />
             )
           )}

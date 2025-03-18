@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, type, value, purchaseDate, nextMaintenanceDate, status, maxMaterials } = body;
+    const { name, type, value, purchaseDate, nextMaintenance, status, maxMaterials } = body;
 
     // بدء المعاملة
     const result = await prisma.$transaction(async (tx) => {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
           value: parseFloat(value),
           maxMaterials: parseFloat(maxMaterials),
           purchaseDate: new Date(purchaseDate),
-          nextMaintenance:  new Date(nextMaintenanceDate) ,
+          nextMaintenance:  new Date(nextMaintenance) ,
           status,
           user: {
             connect: {

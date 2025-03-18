@@ -48,7 +48,7 @@ const columns = [
   {
     id: 'quantity',
     label: 'الازايز/الكراتين',
-    format: (value: number) => `${value.toLocaleString('ar-EG')} ازازة ${Math.floor(value / 12)===0?"":'='} ${Math.floor(value / 12)===0?"":( Math.floor(value / 12) ).toLocaleString('ar-EG')} ${Math.floor(value / 12)===0?"":Math.floor(value / 12)>10?'كروتونة':'كراتين'} ${value % 12>0&&Math.floor(value / 12)!==0?`${Math.floor(value / 12)===0?"":"و"} ${( value % 12).toLocaleString('ar-EG')} ازايز`:""} `,
+    format: (value: number) => `${value>0?`${value.toLocaleString('ar-EG')} ازازة `:"لا يوجد"}${Math.floor(value / 12)===0?"":'='} ${Math.floor(value / 12)===0?"":( Math.floor(value / 12) ).toLocaleString('ar-EG')} ${Math.floor(value / 12)===0?"":Math.floor(value / 12)>10?'كروتونة':'كراتين'} ${value % 12>0&&Math.floor(value / 12)!==0?`${Math.floor(value / 12)===0?"":"و"} ${( value % 12).toLocaleString('ar-EG')} ازايز`:""} `,
   },
   {
     id: 'stockValue',

@@ -184,12 +184,15 @@ export function ProductConversionDialog({
             <Grid item xs={12}>
               <Alert severity="info">
                 <Typography variant="body1">نتيجة التحويل:</Typography>
-                <Typography>عدد الزجاجات: {conversionResult.bottles}</Typography>
-                <Typography>عدد الكراتين: {conversionResult.cartons}</Typography>
-                <Typography>عدد الأغطية: {conversionResult.caps}</Typography>
-                <Typography>عدد السليف: {conversionResult.sleeves}</Typography>
-                <Typography>عدد الاستيكر: {conversionResult.stickers}</Typography>
+                <Typography color={conversionResult.avialableBottles ? 'default' : 'error'}>عدد الزجاجات: {conversionResult.bottles}</Typography>
+                <Typography color={conversionResult.avialableCartons ? 'default' : 'error'}>عدد الكراتين: {conversionResult.cartons}</Typography>
+                <Typography color={conversionResult.avialableCaps ? 'default' : 'error'}>عدد الأغطية: {conversionResult.caps}</Typography>
+                <Typography color={conversionResult.avialableSleeves ? 'default' : 'error'}>عدد السليف: {conversionResult.sleeves}</Typography>
+                <Typography color={conversionResult.avialableStickers ? 'default' : 'error'}>عدد الاستيكر: {conversionResult.stickers}</Typography>
               </Alert>
+             { (!conversionResult.avialableBottles || !conversionResult.avialableCartons || !conversionResult.avialableCaps || !conversionResult.avialableSleeves || !conversionResult.avialableStickers) && <Alert severity={'error'}>
+               يجب اضافة مواد لتكملة الإنتاج 
+              </Alert>}
             </Grid>
           )}
         </Grid>
@@ -209,7 +212,7 @@ export function ProductConversionDialog({
             onClick={handleConfirm}
             variant="contained" 
             color="success"
-            disabled={loading}
+            disabled={loading || !conversionResult.avialableBottles || !conversionResult.avialableCartons || !conversionResult.avialableCaps || !conversionResult.avialableSleeves || !conversionResult.avialableStickers}
           >
             تأكيد التحويل
           </Button>

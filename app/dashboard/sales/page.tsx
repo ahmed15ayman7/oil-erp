@@ -39,7 +39,7 @@ const columns = [
     id: 'items',
     label: 'الازايز/الكراتين',
     format: (values: any[]) =>{ let value = values.reduce((acc: number, item: any) => acc + item.quantity, 0)
-      return `${value.toLocaleString('ar-EG')} ازازة ${Math.floor(value / 12)===0?"":'='} ${Math.floor(value / 12)===0?"":( Math.floor(value / 12) ).toLocaleString('ar-EG')} ${Math.floor(value / 12)===0?"":Math.floor(value / 12)>10?'كروتونة':'كراتين'} ${value % 12>0&&Math.floor(value / 12)!==0?`${Math.floor(value / 12)===0?"":"و"} ${( value % 12).toLocaleString('ar-EG')} ازايز`:""} `
+      return `${value>0?`${value.toLocaleString('ar-EG')} ازازة `:"لا يوجد"}${Math.floor(value / 12)===0?"":'='} ${Math.floor(value / 12)===0?"":( Math.floor(value / 12) ).toLocaleString('ar-EG')} ${Math.floor(value / 12)===0?"":Math.floor(value / 12)>10?'كروتونة':'كراتين'} ${value % 12>0&&Math.floor(value / 12)!==0?`${Math.floor(value / 12)===0?"":"و"} ${( value % 12).toLocaleString('ar-EG')} ازايز`:""} `
     }
   },
   {
@@ -295,7 +295,7 @@ let statuses = [{id:'UNPAID',name:'غير مدفوعة'},{id:'PAID',name:'مدف
         <ConfirmDialog
           open={deleteDialogOpen}
         title="حذف الفاتورة"
-          message={`هل أنت متأكد من حذف الفاتورة رقم "${selectedSale?.id}"؟`}
+          message={`هل أنت متأكد من حذف الفاتورة رقم "${selectedSale?.invoiceNumber}"؟`}
           onConfirm={handleConfirmDelete}
           onCancel={() => setDeleteDialogOpen(false)}
           loading={formLoading}
