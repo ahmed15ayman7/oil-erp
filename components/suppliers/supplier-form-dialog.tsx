@@ -153,6 +153,7 @@ export function SupplierFormDialog({
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
                   label="آخر توريد"
+                  format='DD/MM/YYYY'
                   value={formData.lastPurchaseDate}
                   onChange={(value) => handleChange('lastPurchaseDate')(value)}
                 />

@@ -95,7 +95,7 @@ export default function RepresentativesPage() {
     setFormLoading(true);
     try {
       if (selectedRepresentative) {
-        await fetch("/api/representatives", {
+       let res=  await fetch("/api/representatives", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -103,24 +103,45 @@ export default function RepresentativesPage() {
             id: selectedRepresentative.id,
           }),
         });
-        toast.update(loadingToast, {
-          render: "تم تحديث بيانات المندوب بنجاح",
-          type: "success",
-          isLoading: false,
-          autoClose: 3000,
-        });
+        if(res.ok){
+          toast.update(loadingToast, {
+            render: "تم تحديث بيانات المندوب بنجاح",
+            type: "success",
+            isLoading: false,
+            autoClose: 3000,
+          });
+        }else{
+          toast.update(loadingToast, {
+            render: "فشل تحديث بيانات المندوب ",
+            type: "error",
+            isLoading: false,
+            autoClose: 3000,
+          });
+        }
       } else {
-        await fetch("/api/representatives", {
+      let res=  await fetch("/api/representatives", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
         });
-        toast.update(loadingToast, {
-          render: "تم إضافة المندوب بنجاح",
-          type: "success",
-          isLoading: false,
-          autoClose: 3000,
-        });
+        if (res.ok) {
+          
+          toast.update(loadingToast, {
+            render: "تم إضافة المندوب بنجاح",
+            type: "success",
+            isLoading: false,
+            autoClose: 3000,
+          });
+        }else{
+      
+            toast.update(loadingToast, {
+              render: "فشل إضافة المندوب ",
+              type: "error",
+              isLoading: false,
+              autoClose: 3000,
+            });
+          }
+      
       }
       setFormOpen(false);
       refetchRepresentatives();
@@ -199,7 +220,7 @@ export default function RepresentativesPage() {
       });
     }
   };
-
+console.log(data?.representatives)
   return (
     <div className="space-y-6">
       <PageHeader

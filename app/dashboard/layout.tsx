@@ -108,12 +108,12 @@ const menuItems = [
     title: "الخزينة",
     path: "/dashboard/treasury",
     icon: <IconCash />,
+      roles: ["ADMIN"],
   },
   // {
   //   title: "المستخدمين",
   //   path: "/dashboard/users",
   //   icon: <IconUserCircle />,
-  //   roles: ["ADMIN"],
   // },
   {
     title: "الإعدادات",
