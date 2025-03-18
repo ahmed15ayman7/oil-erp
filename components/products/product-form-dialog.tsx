@@ -40,7 +40,7 @@ export function ProductFormDialog({
     categoryId: '',
     unitId: '',
     price: 0,
-    quantity: 0,
+    // quantity: 0,
     minQuantity: 0,
     maxQuantity: 0,
     barcode: `${Math.random().toString().substring(2, 9)}`,
@@ -69,12 +69,14 @@ const [pQuantity, setPQuantity] = useState("p");
         categoryId: initialData.categoryId,
         unitId: initialData.unitId,
         price: initialData.price,
-        quantity: initialData.quantity,
+        // quantity: initialData.quantity,
         minQuantity: initialData.minQuantity,
         maxQuantity: initialData.maxQuantity,
         barcode: initialData.barcode || '',
         isActive: initialData.isActive,
       });
+      setPPrice("p")
+      setPQuantity("p")
     } else {
       setFormData({
         code: `${Math.random().toString().substring(2, 9)}`,
@@ -83,7 +85,7 @@ const [pQuantity, setPQuantity] = useState("p");
         categoryId: '',
         unitId: '',
         price: 0,
-        quantity: 0,
+        // quantity: 0,
         minQuantity: 0,
         maxQuantity: 0,
         barcode: `${Math.random().toString().substring(2, 9)}`,
@@ -109,8 +111,9 @@ const [pQuantity, setPQuantity] = useState("p");
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    onSubmit({...formData, quantity: pQuantity==="c"? formData.quantity * 12 : formData.quantity,minQuantity:pQuantity==="c"? formData.minQuantity * 12 : formData.minQuantity,maxQuantity:pQuantity==="c"? formData.maxQuantity * 12 : formData.maxQuantity,price: pPrice==="c"? formData.price / 12 : formData.price});
+    onSubmit({...formData,price: pPrice==="c"? formData.price / 12 : formData.price});
   };
+  // quantity: pQuantity==="c"? formData.quantity * 12 : formData.quantity,minQuantity:pQuantity==="c"? formData.minQuantity * 12 : formData.minQuantity,maxQuantity:pQuantity==="c"? formData.maxQuantity * 12 : formData.maxQuantity,
 
   return (
     <Dialog
@@ -210,14 +213,22 @@ const [pQuantity, setPQuantity] = useState("p");
                 fullWidth
                 label="ق/ك"
                 value={pPrice}
-                onChange={(e) => setPPrice(e.target.value)}
+                onChange={(e) => {
+                if(e.target.value==="p"){
+                  setFormData((prev) => ({ ...prev, price: formData.price / 12 }))
+                }else{
+                  setFormData((prev) => ({ ...prev, price: formData.price * 12 }))
+                }
+                    setPPrice(e.target.value)
+
+                }}
                 required
               >
                 <MenuItem value={"p"}>ازازة</MenuItem>
                 <MenuItem value={"c"}>كرتونة</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={10} sm={4}>
+            {/* <Grid item xs={10} sm={4}>
               <TextField
                 fullWidth
                 type="number"
@@ -226,20 +237,28 @@ const [pQuantity, setPQuantity] = useState("p");
                 onChange={handleChange('quantity')}
                 required
               />
-            </Grid>
-            <Grid item xs={2} sm={2}>
+            </Grid> */}
+            {/* <Grid item xs={2} sm={2}>
               <TextField
                 select
                 fullWidth
                 label="ق/ك"
                 value={pQuantity}
-                onChange={(e) => setPQuantity(e.target.value)}
+                onChange={(e) => {
+                  if(e.target.value==="p"){
+                    setFormData((prev) => ({ ...prev, quantity: formData.quantity / 12 }))
+                  }else{
+                    setFormData((prev) => ({ ...prev, quantity: formData.quantity * 12 }))
+                  }
+                      setPQuantity(e.target.value)
+  
+                  }}
                 required
               >
                 <MenuItem value={"p"}>ازازة</MenuItem>
                 <MenuItem value={"c"}>كرتونة</MenuItem>
               </TextField>
-            </Grid>
+            </Grid> */}
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth

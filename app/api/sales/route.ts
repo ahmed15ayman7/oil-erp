@@ -123,11 +123,11 @@ export async function POST(request: NextRequest) {
           discount,
           total,
           user: { connect: { id: session.user.id } },
-          rep:repId && {
+          rep:repId ? {
             connect: {
               id: repId
             }
-          },
+          } : undefined,
           items: {
             create: items.map((item: any) => ({
               productId: item.productId,
@@ -136,6 +136,16 @@ export async function POST(request: NextRequest) {
               total: item.total,
             })),
           },
+          transactions:{
+            create:{
+              type: "SALE_PAYMENT",
+              amount: total,
+              description: `دفع فاتورة مبيعات رقم ${invoiceNumber}`,
+              reference: invoiceNumber,
+              referenceType: "SALE",
+              createdBy: session.user.id,
+            }
+          }
         },
       });
 
@@ -150,30 +160,30 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // إنشاء حركة مخزون
-        await tx.stockMovement.create({
-          data: {
-            productId: item.productId,
-            type: "SALE",
-            quantity: -item.quantity,
-            reference: invoiceNumber,
-            userId: session.user.id,
-          },
-        });
+        // // إنشاء حركة مخزون
+        // await tx.stockMovement.create({
+        //   data: {
+        //     productId: item.productId,
+        //     type: "SALE",
+        //     quantity: -item.quantity,
+        //     reference: invoiceNumber,
+        //     userId: session.user.id,
+        //   },
+        // });
       }
 
       // 3. إنشاء معاملة مالية في الخزينة
-      const transaction = await tx.transaction.create({
-        data: {
-          type: "SALE_PAYMENT",
-          amount: total,
-          description: `دفع فاتورة مبيعات رقم ${invoiceNumber}`,
-          reference: invoiceNumber,
-          referenceType: "SALE",
-          saleId: sale.id,
-          createdBy: session.user.id,
-        },
-      });
+      // const transaction = await tx.transaction.create({
+      //   data: {
+      //     type: "SALE_PAYMENT",
+      //     amount: total,
+      //     description: `دفع فاتورة مبيعات رقم ${invoiceNumber}`,
+      //     reference: invoiceNumber,
+      //     referenceType: "SALE",
+      //     saleId: sale.id,
+      //     createdBy: session.user.id,
+      //   },
+      // });
 
       // 4. إذا كان هناك مندوب، إنشاء معاملة مالية لعمولة التوصيل
       if (repId) {
