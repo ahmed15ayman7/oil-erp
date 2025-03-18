@@ -103,7 +103,14 @@ export async function POST(request: NextRequest) {
     });
     const lastNumber = lastSale ? parseInt(lastSale.invoiceNumber.split("-")[1]) : 0;
     const invoiceNumber = `INV-${(lastNumber + 1).toString().padStart(5, "0")}`;
-
+let date1=new Date()
+let date2=dueDate ? new Date(dueDate) : null
+let itemsM=items.map((item: any) => ({
+  productId: item.productId,
+  quantity: item.quantity,
+  price: item.price,
+  total: item.total,
+}))
     // بدء المعاملة
     const result = await prisma.$transaction(async (tx) => {
       // 1. إنشاء الفاتورة
@@ -115,8 +122,8 @@ export async function POST(request: NextRequest) {
               id: customerId
             }
           },
-          date: new Date(),
-          dueDate: dueDate ? new Date(dueDate) : null,
+          date: date1,
+          dueDate: date2,
           subtotal,
           tax,
           status,
@@ -127,25 +134,10 @@ export async function POST(request: NextRequest) {
             connect: {
               id: repId
             }
-          } : undefined,
+          }:undefined,
           items: {
-            create: items.map((item: any) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: item.price,
-              total: item.total,
-            })),
+            create: itemsM
           },
-          transactions:{
-            create:{
-              type: "SALE_PAYMENT",
-              amount: total,
-              description: `دفع فاتورة مبيعات رقم ${invoiceNumber}`,
-              reference: invoiceNumber,
-              referenceType: "SALE",
-              createdBy: session.user.id,
-            }
-          }
         },
       });
 
@@ -173,17 +165,17 @@ export async function POST(request: NextRequest) {
       }
 
       // 3. إنشاء معاملة مالية في الخزينة
-      // const transaction = await tx.transaction.create({
-      //   data: {
-      //     type: "SALE_PAYMENT",
-      //     amount: total,
-      //     description: `دفع فاتورة مبيعات رقم ${invoiceNumber}`,
-      //     reference: invoiceNumber,
-      //     referenceType: "SALE",
-      //     saleId: sale.id,
-      //     createdBy: session.user.id,
-      //   },
-      // });
+      const transaction = await tx.transaction.create({
+        data: {
+          type: "SALE_PAYMENT",
+          amount: total,
+          description: `دفع فاتورة مبيعات رقم ${invoiceNumber}`,
+          reference: invoiceNumber,
+          referenceType: "SALE",
+          saleId: sale.id,
+          createdBy: session.user.id,
+        },
+      });
 
       // 4. إذا كان هناك مندوب، إنشاء معاملة مالية لعمولة التوصيل
       if (repId) {
