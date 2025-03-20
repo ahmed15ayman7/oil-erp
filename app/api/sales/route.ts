@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, prismaTimeout } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { ApiError } from '@/lib/api-error';
 import { successResponse, handleApiError } from '@/lib/api-response';
@@ -112,7 +112,7 @@ let itemsM=items.map((item: any) => ({
   total: item.total,
 }))
     // بدء المعاملة
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prismaTimeout(prisma.$transaction(async (tx) => {
       // 1. إنشاء الفاتورة
       const sale = await tx.sale.create({
         data: {
@@ -199,7 +199,7 @@ let itemsM=items.map((item: any) => ({
       }
 
       return sale;
-    });
+    }), 12000);
 
     return NextResponse.json(result);
   } catch (error) {

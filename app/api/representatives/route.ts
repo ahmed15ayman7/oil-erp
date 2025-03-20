@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, prismaTimeout } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Prisma, TransactionType } from "@prisma/client";
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     const { name, phone, area, deliveryFee, status } = body;
 
     // بدء المعاملة
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prismaTimeout( prisma.$transaction(async (tx) => {
       // 1. إنشاء المندوب
       const representative = await tx.representative.create({
         data: {
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       }
 
       return representative;
-    });
+    }));
 
     return NextResponse.json(result);
   } catch (error) {
